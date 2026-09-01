@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "328551992610",
+    "project_id": "musahi-app",
+    "storage_bucket": "musahi-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:328551992610:android:ef03ea4d392aba35fe697b",
+        "android_client_info": {
+          "package_name": "com.example.musahi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCo_xu-3MtE0J4mwE8P2scoOO4jhqLXpXA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

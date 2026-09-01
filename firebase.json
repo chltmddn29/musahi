@@ -1,0 +1,57 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "musahi-app",
+          "appId": "1:328551992610:android:ef03ea4d392aba35fe697b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "musahi-app",
+          "appId": "1:328551992610:ios:b71b92dceccc5457fe697b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "musahi-app",
+          "appId": "1:328551992610:ios:b71b92dceccc5457fe697b",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "musahi-app",
+          "configurations": {
+            "android": "1:328551992610:android:ef03ea4d392aba35fe697b",
+            "ios": "1:328551992610:ios:b71b92dceccc5457fe697b",
+            "macos": "1:328551992610:ios:b71b92dceccc5457fe697b",
+            "web": "1:328551992610:web:3ba8d79586fcec46fe697b",
+            "windows": "1:328551992610:web:c6734d4591e9609bfe697b"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+      ]
+    }
+  ]
+}
