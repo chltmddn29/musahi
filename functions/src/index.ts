@@ -30,6 +30,10 @@ function getSeverity(emrgStepNm: string): "위급" | "긴급" | "안전안내" {
     return "안전안내";
 }
 
+function getSeverityBand(severity: string): "critical" | "safe" {
+    return severity === "안전안내" ? "safe" : "critical";
+}
+
 async function fetchDisasterMessagesPage(
     apiKey: string,
     page: number,
@@ -87,6 +91,7 @@ async function fetchAllTodayMessages(apiKey: string): Promise<any[]> {
 
 async function publishMessage(msg: any) {
     const severity = getSeverity(msg.EMRG_STEP_NM ?? "");
+    const band = getSeverityBand(severity);
     const regionIds: string[] = (msg.RCPTN_RGN_ID ?? "")
         .split(",")
         .map((id: string) => id.trim())
@@ -97,7 +102,7 @@ async function publishMessage(msg: any) {
         return;
     }
 
-    const topics = ["all", ...regionIds];  // "all" 추가
+    const topics = ["all", ...regionIds.map((id) => `${id}_${band}`)];
 
     const publishPromises = topics.map((topicSuffix) => {
         const topic = `region_${topicSuffix}`;
@@ -119,8 +124,9 @@ async function publishMessage(msg: any) {
     });
 
     await Promise.allSettled(publishPromises);
-    logger.info(`FCM 발행 완료 (SN: ${msg.SN}, 심각도: ${severity}, 지역: ${regionIds.join(",")})`);
+    logger.info(`FCM 발행 완료 (SN: ${msg.SN}, 심각도: ${severity}, 밴드: ${band}, 지역: ${regionIds.join(",")})`);
 }
+
 async function collectRegionCodes(msg: any) {
     const ids: string[] = (msg.RCPTN_RGN_ID ?? "")
         .split(",")

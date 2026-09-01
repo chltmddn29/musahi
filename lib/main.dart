@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,8 @@ void main() async {
   }
 
   await FirebaseMessaging.instance.subscribeToTopic('region_all');
-
+  await FirebaseMessaging.instance.subscribeToTopic('region_236_critical');
+  await FirebaseMessaging.instance.subscribeToTopic('region_236_safe');
   FirebaseMessaging.onMessage.listen(_handleMessage);
 
   runApp(const MyApp());
@@ -88,9 +90,101 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: Scaffold(
-        appBar: AppBar(title: const Text('무사히')),
-        body: const Center(child: Text('재난 알림 대기 중...')),
+      home: const HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('무사히'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: const Center(child: Text('재난 알림 대기 중...')),
+    );
+  }
+}
+
+class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case '위급':
+        return Colors.red.shade700;
+      case '긴급':
+        return Colors.orange.shade800;
+      default:
+        return Colors.blueGrey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('지난 알림')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instanceFor(
+          app: Firebase.app(),
+          databaseId: 'musahi',
+        )
+            .collection('messages')
+            .orderBy('sn', descending: true)
+            .limit(50)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('오류: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(child: Text('받은 알림이 없습니다.'));
+          }
+          return ListView.separated(
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final severity = data['severity'] ?? '안전안내';
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _severityColor(severity),
+                  child: Text(
+                    severity.substring(0, 1),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+                title: Text(data['rcptnRgnNm']?.toString().trim() ?? ''),
+                subtitle: Text(
+                  data['msgCn'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  (data['crtDt'] ?? '').toString().split(' ').last,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
