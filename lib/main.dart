@@ -3,6 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/navigator/custom_go_router.dart';
+import 'package:musahi/core/widgets/base_scaffold.dart';
+import 'package:musahi/core/widgets/info_card.dart';
+import 'package:musahi/core/widgets/custom_app_bar.dart';
+import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/firebase_options.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -48,7 +54,13 @@ void _handleMessage(RemoteMessage message) {
         canPop: false,
         child: AlertDialog(
           backgroundColor: Colors.red.shade700,
-          title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Text(body, style: const TextStyle(color: Colors.white)),
           actions: [
             TextButton(
@@ -64,7 +76,10 @@ void _handleMessage(RemoteMessage message) {
       SnackBar(
         backgroundColor: Colors.orange.shade800,
         duration: const Duration(seconds: 8),
-        content: Text('$title\n$body', style: const TextStyle(color: Colors.white)),
+        content: Text(
+          '$title\n$body',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   } else {
@@ -72,7 +87,10 @@ void _handleMessage(RemoteMessage message) {
       SnackBar(
         backgroundColor: Colors.blueGrey,
         duration: const Duration(seconds: 5),
-        content: Text('$title\n$body', style: const TextStyle(color: Colors.white)),
+        content: Text(
+          '$title\n$body',
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -83,14 +101,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
+    return MaterialApp.router(
+      routerConfig: goRouter,
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        fontFamily: 'Pretendard',
+        scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const HomeScreen(),
     );
   }
 }
@@ -100,21 +119,27 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('무사히'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const HistoryScreen()),
-              );
-            },
+    final dt = DateTime.now();
+    return BaseScaffold(
+      appBar: CustomAppBar(title: '안녕하세요'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Center(child: Text('재난 알림 대기 중...')),
+          InfoCard.alert(
+            title: '공주시 화재',
+            severity: '안내',
+            time: '${dt.month}/${dt.day} ${dt.hour}:${dt.minute}',
+          ),
+          const InfoCard(title: '안녕'),
+          const SizedBox(height: 10),
+          InfoCard.shelter(name: '대덕소마고', address: '공주시', distanceMeters: 1000),
+          const Spacer(),
+          Row(
+            children: [Expanded(child: CustomElevatedButton(onPressed: () {}))],
           ),
         ],
       ),
-      body: const Center(child: Text('재난 알림 대기 중...')),
     );
   }
 }
@@ -138,14 +163,15 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('지난 알림')),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instanceFor(
-          app: Firebase.app(),
-          databaseId: 'musahi',
-        )
-            .collection('messages')
-            .orderBy('sn', descending: true)
-            .limit(50)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instanceFor(
+                  app: Firebase.app(),
+                  databaseId: 'musahi',
+                )
+                .collection('messages')
+                .orderBy('sn', descending: true)
+                .limit(50)
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('오류: ${snapshot.error}'));
