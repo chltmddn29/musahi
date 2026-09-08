@@ -1,15 +1,13 @@
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/navigator/custom_bottom_navigator_bar.dart';
-import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/features/edit/edit_page.dart';
 import 'package:musahi/features/guide/guide_page.dart';
-import 'package:musahi/features/main/main_page.dart';
+import 'package:musahi/features/main/presentation/info_page.dart';
 import 'package:musahi/features/share/share_page.dart';
 import 'package:musahi/features/shelter/shelter_page.dart';
 
 final GoRouter goRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
-  initialLocation: '/main',
+  initialLocation: '/info',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -19,8 +17,8 @@ final GoRouter goRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/main',
-              builder: (context, state) => const MainPage(),
+              path: '/info',
+              builder: (context, state) => const InfoPage(),
             ),
           ],
         ),

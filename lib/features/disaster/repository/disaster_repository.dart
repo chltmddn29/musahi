@@ -11,7 +11,7 @@ class DisasterRepository {
     databaseId: 'musahi',
   );
 
-  Stream<List<DisasterMessage>> watchMessage({int limit = 50}) {
+  Stream<List<DisasterMessage>> watchMessage({int limit = 100}) {
     return _db.collection('messages')
         .orderBy('sn', descending: true)
         .limit(limit)
