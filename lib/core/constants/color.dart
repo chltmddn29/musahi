@@ -43,9 +43,9 @@ class AppColors {
   static Color severityBackground(String severity) {
     switch (severity) {
       case '위급':
-        return alertCritical.withOpacity(0.12);
+        return alertCritical.withValues(alpha: 0.12);
       case '긴급':
-        return alertUrgent.withOpacity(0.16);
+        return alertUrgent.withValues(alpha: 0.16);
       default:
         return mutedSurface;
     }

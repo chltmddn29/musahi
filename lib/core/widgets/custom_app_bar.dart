@@ -18,8 +18,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       titleSpacing: 0,
       leading: icon
-          ? Icon(Icons.arrow_back_ios_new_outlined, color: AppColors.background)
-          : SizedBox(),
+          ? const Icon(
+              Icons.arrow_back_ios_new_outlined,
+              color: AppColors.background,
+            )
+          : const SizedBox(),
     );
   }
 
