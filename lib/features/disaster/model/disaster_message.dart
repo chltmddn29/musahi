@@ -12,5 +12,10 @@ class DisasterMessage {
         regionName = (m['rcptnRgnNm'] ?? '').toString().trim(),
         title = m['msgCn'] ?? '',
         createdAt = m['crtDt'] ?? '',
-        category = m['dstSeNm'] ?? '기타';
+        category = _normalizeCategory(m['dstSeNm']);
+
+  static String _normalizeCategory(dynamic value) {
+    final category = (value ?? '').toString().trim();
+    return category.isEmpty ? '기타' : category;
+  }
 }

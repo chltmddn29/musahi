@@ -15,7 +15,7 @@ class InfoPage extends StatefulWidget {
 
 class _InfoPageState extends State<InfoPage> {
   static const String allCategory = '전체';
-  final List<String> category = ['전체', '폭염', '지진', '태풍', '호우', '기타'];
+  final List<String> category = [allCategory, '폭염', '지진', '태풍', '호우', '기타'];
   String selectedCategory = allCategory;
 
   Widget _categoryButton(String cat) {
