@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 
@@ -18,9 +19,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       titleSpacing: 0,
       leading: icon
-          ? const Icon(
-              Icons.arrow_back_ios_new_outlined,
-              color: AppColors.background,
+          ? GestureDetector(
+              onTap: () => context.pop(),
+              child: const Icon(
+                Icons.arrow_back_ios_new_outlined,
+                color: AppColors.background,
+              ),
             )
           : const SizedBox(),
     );

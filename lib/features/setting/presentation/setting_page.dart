@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
+import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
 class SettingPage extends StatefulWidget {
@@ -34,7 +36,24 @@ class _SettingPageState extends State<SettingPage> {
         onSwitchChanged: (v) => setState(() => switchValues[1] = v),
       ),
     ];
-    final navItems = [
+    return BaseScaffold(
+      appBar: const CustomAppBar(title: '설정', icon: false),
+      child: ListView(
+        children: [
+          const SizedBox(height: 100),
+          _buildGroup(toggleItems),
+          const SizedBox(height: 40),
+          ValueListenableBuilder<int>(
+            valueListenable: textSizeStep,
+            builder: (context, step, _) => _buildGroup(_navItems(context, step)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<SettingMenuItem> _navItems(BuildContext context, int textSizeStepValue) {
+    return [
       SettingMenuItem(
         icon: Icons.language,
         title: '언어 설정',
@@ -56,21 +75,10 @@ class _SettingPageState extends State<SettingPage> {
       SettingMenuItem(
         icon: Icons.text_fields,
         title: '텍스트 크기 조절',
-        subTitle: '보통',
+        subTitle: TextSizePage.stepLabels[textSizeStepValue],
         onPressed: () => context.push('/setting/text-size'),
       ),
     ];
-    return BaseScaffold(
-      appBar: const CustomAppBar(title: '설정', icon: false),
-      child: ListView(
-        children: [
-          const SizedBox(height: 100),
-          _buildGroup(toggleItems),
-          const SizedBox(height: 40),
-          _buildGroup(navItems),
-        ],
-      ),
-    );
   }
 }
 
