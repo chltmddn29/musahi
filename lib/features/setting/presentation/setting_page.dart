@@ -4,7 +4,7 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
-import 'package:musahi/features/setting/widget/edit_menu.dart';
+import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -62,7 +62,7 @@ class _SettingPageState extends State<SettingPage> {
     ];
     return BaseScaffold(
       appBar: const CustomAppBar(title: '설정', icon: false),
-      child: Column(
+      child: ListView(
         children: [
           const SizedBox(height: 100),
           _buildGroup(toggleItems),
@@ -83,7 +83,7 @@ Widget _buildGroup(List<SettingMenuItem> items) {
     child: Column(
       children: [
         for (int i = 0; i < items.length; i++) ...[
-          EditMenu(menuItem: items[i]),
+          SettingMenuTile(menuItem: items[i]),
           if (i != items.length - 1)
             const Divider(height: 1, color: AppColors.divider, thickness: 2),
         ],

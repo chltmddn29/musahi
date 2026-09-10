@@ -4,10 +4,10 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
 
-class EditMenu extends StatelessWidget {
+class SettingMenuTile extends StatelessWidget {
   final SettingMenuItem menuItem;
 
-  const EditMenu({super.key, required this.menuItem});
+  const SettingMenuTile({super.key, required this.menuItem});
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +35,7 @@ class EditMenu extends StatelessWidget {
   }
 
   Widget get iconButton => Row(
+    mainAxisSize: MainAxisSize.min,
     children: [
       Text(
         menuItem.subTitle ?? '',
