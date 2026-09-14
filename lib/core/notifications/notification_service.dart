@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -8,24 +8,38 @@ class NotificationService {
   const NotificationService._();
 
   static Future<void> init() async {
-    final settings = await FirebaseMessaging.instance.requestPermission();
-    debugPrint('알림 권한 상태: ${settings.authorizationStatus}');
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission();
+      debugPrint('알림 권한 상태: ${settings.authorizationStatus}');
 
-    if (Platform.isIOS) {
-      String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-      int retries = 0;
-      while (apnsToken == null && retries < 10) {
-        await Future.delayed(const Duration(seconds: 1));
-        apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-        retries++;
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        await _waitForApnsToken();
       }
+
+      await FirebaseMessaging.instance.subscribeToTopic('region_all');
+      await FirebaseMessaging.instance.subscribeToTopic('region_236_critical');
+      await FirebaseMessaging.instance.subscribeToTopic('region_236_safe');
+
+      FirebaseMessaging.onMessage.listen(_handleMessage);
+    } catch (e) {
+      // 웹은 dart:io Platform을 지원하지 않고, 시뮬레이터 등은 APNS 토큰이
+      // 끝내 발급되지 않을 수 있다 — 알림 초기화 실패가 앱 구동 자체를
+      // 막지 않도록 여기서 흡수한다.
+      debugPrint('알림 초기화 실패: $e');
     }
+  }
 
-    await FirebaseMessaging.instance.subscribeToTopic('region_all');
-    await FirebaseMessaging.instance.subscribeToTopic('region_236_critical');
-    await FirebaseMessaging.instance.subscribeToTopic('region_236_safe');
-
-    FirebaseMessaging.onMessage.listen(_handleMessage);
+  /// iOS 실기기에서는 보통 곧바로 발급되지만, 시뮬레이터는 APNS를 지원하지
+  /// 않아 [FirebaseMessaging.getAPNSToken]이 계속 null이거나 예외를 던진다.
+  static Future<void> _waitForApnsToken() async {
+    for (var retries = 0; retries < 10; retries++) {
+      try {
+        if (await FirebaseMessaging.instance.getAPNSToken() != null) return;
+      } catch (_) {
+        return;
+      }
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
 
   static void _handleMessage(RemoteMessage message) {
