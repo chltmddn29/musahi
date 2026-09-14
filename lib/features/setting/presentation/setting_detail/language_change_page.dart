@@ -35,7 +35,7 @@ class _LanguageChangePageState extends State<LanguageChangePage> {
     final languages = AppLanguage.values;
 
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '언어 설정', icon: false),
+      appBar: const CustomAppBar(title: '언어 설정', icon: true),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.07),
         child: Container(
