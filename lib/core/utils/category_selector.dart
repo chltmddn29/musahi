@@ -36,6 +36,9 @@ class CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.5);
+    final resolvedHeight = height * textScale;
+
     final scrollableCategories = pinFirst
         ? categories.skip(1).toList()
         : categories;
@@ -49,11 +52,11 @@ class CategorySelector extends StatelessWidget {
     );
 
     if (!pinFirst || categories.isEmpty) {
-      return SizedBox(height: height, child: scrollableList);
+      return SizedBox(height: resolvedHeight, child: scrollableList);
     }
 
     return SizedBox(
-      height: height,
+      height: resolvedHeight,
       child: Row(
         children: [
           _categoryButton(categories.first),
