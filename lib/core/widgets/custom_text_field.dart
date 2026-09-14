@@ -3,14 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 
-/// 회색 라운드 입력창 공통 컴포넌트.
-///
-/// [label]을 주면 입력창 위에 라벨이 붙는 폼 필드 형태(이름, 전화번호 등)로,
-/// [prefixIcon]을 주면 아이콘이 붙는 검색창 형태(지역 검색 등)로 동작한다.
 class CustomTextField extends StatelessWidget {
   final String? label;
   final String? hintText;
-  final IconData? prefixIcon;
+  final Icon? prefixIcon;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -49,7 +45,7 @@ class CustomTextField extends StatelessWidget {
         hintStyle: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
         prefixIcon: prefixIcon == null
             ? null
-            : Icon(prefixIcon, color: AppColors.muted),
+            : Icon(prefixIcon?.icon, color: AppColors.muted),
         filled: true,
         fillColor: AppColors.mutedSurface,
         contentPadding: EdgeInsets.symmetric(
