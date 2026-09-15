@@ -37,7 +37,9 @@ class _LanguageChangePageState extends State<LanguageChangePage> {
     return BaseScaffold(
       appBar: const CustomAppBar(title: '언어 설정', icon: true),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.07),
+        padding: EdgeInsets.symmetric(
+          vertical: MediaQuery.of(context).size.height * 0.07,
+        ),
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.divider),
@@ -53,11 +55,10 @@ class _LanguageChangePageState extends State<LanguageChangePage> {
           ),
           clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children:[
-                ...List.generate(languages.length, (index) {
+              children: List.generate(languages.length, (index) {
                 final language = languages[index];
                 return LanguageSelectionTile<AppLanguage>(
                   languageName: language.label,
@@ -67,7 +68,7 @@ class _LanguageChangePageState extends State<LanguageChangePage> {
                   showDivider: index != languages.length - 1,
                 );
               }),
-            ]),
+            ),
           ),
         ),
       ),

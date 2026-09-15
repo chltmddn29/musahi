@@ -59,7 +59,7 @@ class _RadioIndicator extends StatelessWidget {
         shape: BoxShape.circle,
         color: isSelected ? AppColors.primary : Colors.transparent,
         border: Border.all(
-          color: isSelected ? AppColors.primary : const Color(0xFFD9D9D9),
+          color: isSelected ? AppColors.primary : AppColors.mutedSurface,
           width: 2,
         ),
       ),
