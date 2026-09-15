@@ -7,6 +7,8 @@ import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
+import 'package:musahi/features/setting/model/safety_contact_model.dart';
+import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
@@ -50,6 +52,7 @@ class _SettingPageState extends State<SettingPage> {
               textSizeStep,
               InterestRegionStore.instance.regions,
               InterestRegionStore.instance.primaryCd,
+              SafetyContactStore.instance.contacts,
             ]),
             builder: (context, _) => _buildGroup(
               _navItems(
@@ -57,6 +60,7 @@ class _SettingPageState extends State<SettingPage> {
                 textSizeStep.value,
                 InterestRegionStore.instance.regions.value,
                 InterestRegionStore.instance.primaryCd.value,
+                SafetyContactStore.instance.contacts.value,
               ),
             ),
           ),
@@ -70,6 +74,7 @@ class _SettingPageState extends State<SettingPage> {
     int textSizeStepValue,
     List<RegionItem> regions,
     String? primaryCd,
+    List<SafetyContact> contacts,
   ) {
     return [
       SettingMenuItem(
@@ -87,7 +92,7 @@ class _SettingPageState extends State<SettingPage> {
       SettingMenuItem(
         icon: Icons.people,
         title: '안전 연락처 관리',
-        subTitle: '2명',
+        subTitle: _contactSubtitle(contacts),
         onPressed: () => context.push('/setting/contacts'),
       ),
       SettingMenuItem(
@@ -109,6 +114,10 @@ class _SettingPageState extends State<SettingPage> {
     return extraCount > 0
         ? '${primary.addrName} 외 $extraCount곳'
         : primary.addrName;
+  }
+
+  String _contactSubtitle(List<SafetyContact> contacts) {
+    return contacts.isEmpty ? '설정 필요' : '${contacts.length}명';
   }
 }
 

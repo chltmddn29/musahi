@@ -4,9 +4,11 @@ import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/features/guide/guide_page.dart';
 import 'package:musahi/features/main/presentation/info_page.dart';
+import 'package:musahi/features/setting/presentation/setting_detail/add_contact_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/language_change_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/region_manage_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/safety_contact_page.dart';
+import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/presentation/setting_page.dart';
 import 'package:musahi/features/share/share_page.dart';
@@ -70,13 +72,22 @@ final GoRouter goRouter = GoRouter(
                 GoRoute(
                   path: 'contacts',
                   builder: (context, state) => const SafetyContactPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'add',
+                      builder: (context, state) => AddContactPage(
+                        editing: state.extra as SafetyContact?,
+                      ),
+                    ),
+                  ],
                 ),
                 GoRoute(
                   path: 'text-size',
                   builder: (context, state) => TextSizePage(
                     initialStep: textSizeStep.value,
-                    onChanged: (fontSize) => textSizeStep.value =
-                        TextSizePage.fontSizes.indexOf(fontSize),
+                    onChanged: (fontSize) => textSizeStep.value = TextSizePage
+                        .fontSizes
+                        .indexOf(fontSize),
                   ),
                 ),
               ],
