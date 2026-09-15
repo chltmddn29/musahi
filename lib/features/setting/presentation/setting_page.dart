@@ -5,6 +5,8 @@ import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
+import 'package:musahi/features/setting/model/region_model.dart';
+import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
@@ -43,16 +45,32 @@ class _SettingPageState extends State<SettingPage> {
           const SizedBox(height: 100),
           _buildGroup(toggleItems),
           const SizedBox(height: 40),
-          ValueListenableBuilder<int>(
-            valueListenable: textSizeStep,
-            builder: (context, step, _) => _buildGroup(_navItems(context, step)),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              textSizeStep,
+              InterestRegionStore.instance.regions,
+              InterestRegionStore.instance.primaryCd,
+            ]),
+            builder: (context, _) => _buildGroup(
+              _navItems(
+                context,
+                textSizeStep.value,
+                InterestRegionStore.instance.regions.value,
+                InterestRegionStore.instance.primaryCd.value,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  List<SettingMenuItem> _navItems(BuildContext context, int textSizeStepValue) {
+  List<SettingMenuItem> _navItems(
+    BuildContext context,
+    int textSizeStepValue,
+    List<RegionItem> regions,
+    String? primaryCd,
+  ) {
     return [
       SettingMenuItem(
         icon: Icons.language,
@@ -63,7 +81,7 @@ class _SettingPageState extends State<SettingPage> {
       SettingMenuItem(
         icon: Icons.map,
         title: '관심지역 관리',
-        subTitle: '서울 강남구 외 1곳',
+        subTitle: _regionSubtitle(regions, primaryCd),
         onPressed: () => context.push('/setting/region'),
       ),
       SettingMenuItem(
@@ -79,6 +97,18 @@ class _SettingPageState extends State<SettingPage> {
         onPressed: () => context.push('/setting/text-size'),
       ),
     ];
+  }
+
+  String _regionSubtitle(List<RegionItem> regions, String? primaryCd) {
+    if (regions.isEmpty) return '설정 필요';
+    final primary = regions.firstWhere(
+      (r) => r.cd == primaryCd,
+      orElse: () => regions.first,
+    );
+    final extraCount = regions.length - 1;
+    return extraCount > 0
+        ? '${primary.addrName} 외 $extraCount곳'
+        : primary.addrName;
   }
 }
 

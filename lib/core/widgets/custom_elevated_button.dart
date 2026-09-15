@@ -3,7 +3,7 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 
 class CustomElevatedButton extends StatelessWidget {
-  final void Function() onPressed;
+  final void Function()? onPressed;
   final Color? backgroundColor;
   final Color? foregroundColor;
   final String child;
