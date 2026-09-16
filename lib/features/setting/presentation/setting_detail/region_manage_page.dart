@@ -21,10 +21,7 @@ class RegionManagePage extends StatefulWidget {
 class _RegionManagePageState extends State<RegionManagePage> {
   final TextEditingController _textEditingController = TextEditingController();
 
-  final RegionRepository _regionRepository = RegionRepository(
-    consumerKey: const String.fromEnvironment('SGIS_CONSUMER_KEY'),
-    consumerSecret: const String.fromEnvironment('SGIS_CONSUMER_SECRET'),
-  );
+  final RegionRepository _regionRepository = RegionRepository();
 
   List<RegionItem> _regions = [];
   final List<RegionItem> _selectionPath = [];
