@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
@@ -12,40 +13,38 @@ import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
   @override
-  State<SettingPage> createState() => _SettingPageState();
-}
-
-class _SettingPageState extends State<SettingPage> {
-  final switchValues = [true, false];
-
-  @override
   Widget build(BuildContext context) {
-    final toggleItems = [
-      SettingMenuItem(
-        icon: Icons.notifications,
-        title: '재난문자 알림',
-        isSwitch: true,
-        switchValue: switchValues[0],
-        onSwitchChanged: (v) => setState(() => switchValues[0] = v),
-      ),
-      SettingMenuItem(
-        icon: Icons.check_circle_outline,
-        title: '안전 안내 알림',
-        isSwitch: true,
-        switchValue: switchValues[1],
-        onSwitchChanged: (v) => setState(() => switchValues[1] = v),
-      ),
-    ];
     return BaseScaffold(
       appBar: const CustomAppBar(title: '설정', icon: false),
       child: ListView(
         children: [
           const SizedBox(height: 100),
-          _buildGroup(toggleItems),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              disasterAlertEnabled,
+              safetyGuideAlertEnabled,
+            ]),
+            builder: (context, _) => _buildGroup([
+              SettingMenuItem(
+                icon: Icons.notifications,
+                title: '재난문자 알림',
+                isSwitch: true,
+                switchValue: disasterAlertEnabled.value,
+                onSwitchChanged: setDisasterAlertEnabled,
+              ),
+              SettingMenuItem(
+                icon: Icons.check_circle_outline,
+                title: '안전 안내 알림',
+                isSwitch: true,
+                switchValue: safetyGuideAlertEnabled.value,
+                onSwitchChanged: setSafetyGuideAlertEnabled,
+              ),
+            ]),
+          ),
           const SizedBox(height: 40),
           ListenableBuilder(
             listenable: Listenable.merge([

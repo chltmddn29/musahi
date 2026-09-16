@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/navigator/custom_go_router.dart';
 import 'package:musahi/core/notifications/notification_service.dart';
+import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/firebase_options.dart';
@@ -13,6 +14,7 @@ void main() async {
   await NotificationService.init();
   await SafetyContactStore.instance.load();
   await loadTextSizeSetting();
+  await loadNotificationSettings();
 
   runApp(const MyApp());
 }
