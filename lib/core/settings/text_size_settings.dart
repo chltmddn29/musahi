@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _textSizeStepKey = 'text_size_step';
@@ -33,3 +33,34 @@ const List<double> textSizeStepFontSizes = [14, 17, 21, 26];
 /// '보통'(index 1)을 기준(1.0)으로 삼아, [MediaQuery]의 textScaler에 적용한다.
 double textScaleForStep(int step) =>
     textSizeStepFontSizes[step] / textSizeStepFontSizes[1];
+
+/// [platformScaler](시스템 접근성 설정)에 앱의 [step] 배율을 곱해서 합성한다.
+///
+/// 단순히 [TextScaler.linear]로 교체하면 사용자가 켜둔 OS 수준 글자 확대
+/// 설정이 앱 실행 중 사라지므로, 두 배율을 곱해 함께 적용한다.
+TextScaler composeTextScaler(TextScaler platformScaler, int step) {
+  return _ComposedTextScaler(platformScaler, textScaleForStep(step));
+}
+
+class _ComposedTextScaler extends TextScaler {
+  const _ComposedTextScaler(this._base, this._factor);
+
+  final TextScaler _base;
+  final double _factor;
+
+  @override
+  double scale(double fontSize) => _base.scale(fontSize) * _factor;
+
+  @override
+  // ignore: deprecated_member_use
+  double get textScaleFactor => _base.textScaleFactor * _factor;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ComposedTextScaler &&
+      other._base == _base &&
+      other._factor == _factor;
+
+  @override
+  int get hashCode => Object.hash(_base, _factor);
+}

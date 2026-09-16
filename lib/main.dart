@@ -13,12 +13,14 @@ import 'package:musahi/firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await NotificationService.init();
   await SafetyContactStore.instance.load();
   await InterestRegionStore.instance.load();
   await loadTextSizeSetting();
   await loadNotificationSettings();
   await loadLanguageSetting();
+  // 알림 on/off, 관심지역 설정을 먼저 불러온 뒤 초기화해야
+  // NotificationService가 최신 값 기준으로 구독/필터링한다.
+  await NotificationService.init();
 
   runApp(const MyApp());
 }
@@ -40,10 +42,11 @@ class MyApp extends StatelessWidget {
         return ValueListenableBuilder<int>(
           valueListenable: textSizeStep,
           builder: (context, step, _) {
+            final mediaQuery = MediaQuery.of(context);
             return MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.linear(textScaleForStep(step))),
+              data: mediaQuery.copyWith(
+                textScaler: composeTextScaler(mediaQuery.textScaler, step),
+              ),
               child: child!,
             );
           },
