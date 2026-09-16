@@ -22,23 +22,28 @@ class LanguageSelectionTile<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onChanged == null ? null : () => onChanged!(value),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(languageName, style: AppTextStyles.label),
-                _RadioIndicator(isSelected: _isSelected),
-              ],
+    return Semantics(
+      selected: _isSelected,
+      button: true,
+      label: languageName,
+      child: InkWell(
+        onTap: onChanged == null ? null : () => onChanged!(value),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(languageName, style: AppTextStyles.label),
+                  ExcludeSemantics(child: _RadioIndicator(isSelected: _isSelected)),
+                ],
+              ),
             ),
-          ),
-          if (showDivider)
-            const Divider(height: 1, thickness: 1, color: AppColors.divider),
-        ],
+            if (showDivider)
+              const Divider(height: 1, thickness: 1, color: AppColors.divider),
+          ],
+        ),
       ),
     );
   }
