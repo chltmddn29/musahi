@@ -25,4 +25,12 @@ class RegionItem {
       xCoor: json['x_coor'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'addr_name': addrName,
+    'cd': cd,
+    'full_addr': fullAddr,
+    'y_coor': yCoor,
+    'x_coor': xCoor,
+  };
 }

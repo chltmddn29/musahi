@@ -6,6 +6,7 @@ import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
+import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/firebase_options.dart';
 
@@ -14,6 +15,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.init();
   await SafetyContactStore.instance.load();
+  await InterestRegionStore.instance.load();
   await loadTextSizeSetting();
   await loadNotificationSettings();
   await loadLanguageSetting();
