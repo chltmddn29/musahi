@@ -1,21 +1,19 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 
-class RegionApiService {
+class RegionRepository {
   static const String _baseUrl = 'https://sgisapi.kostat.go.kr/OpenAPI3';
 
   final String _consumerKey;
   final String _consumerSecret;
+  final Dio _dio = Dio(BaseOptions(baseUrl: _baseUrl));
 
   String? _accessToken;
   DateTime? _accessTokenExpiresAt;
 
-  RegionApiService({
-    required String consumerKey,
-    required String consumerSecret,
-  }) : _consumerKey = consumerKey,
-       _consumerSecret = consumerSecret;
+  RegionRepository({required String consumerKey, required String consumerSecret})
+    : _consumerKey = consumerKey,
+      _consumerSecret = consumerSecret;
 
   Future<void> _ensureAccessToken() async {
     final now = DateTime.now();
@@ -25,15 +23,14 @@ class RegionApiService {
       return; // 아직 유효한 토큰이 있으면 재발급 안 함
     }
 
-    final uri = Uri.parse('$_baseUrl/auth/authentication.json').replace(
+    final response = await _dio.get(
+      '/auth/authentication.json',
       queryParameters: {
         'consumer_key': _consumerKey,
         'consumer_secret': _consumerSecret,
       },
     );
-
-    final response = await http.get(uri);
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
 
     if (body['errCd'] != 0) {
       throw Exception('SGIS 인증 실패: ${body['errMsg']}');
@@ -42,22 +39,17 @@ class RegionApiService {
     final result = body['result'] as Map<String, dynamic>;
     _accessToken = result['accessToken'] as String;
 
-    // accessTimeout은 만료 시각(ms)이 아니라 유효기간(ms)일 수 있어
-    // 실제 응답을 보고 필요시 계산 방식을 조정해주세요.
-    // 우선 안전하게 3시간 후 만료로 처리(SGIS 유효기간은 보통 4시간).
     _accessTokenExpiresAt = now.add(const Duration(hours: 3));
   }
 
-  /// cd가 null이면 시도 목록, cd를 넘기면 해당 지역의 하위 목록을 조회
   Future<List<RegionItem>> fetchRegions({String? cd}) async {
     await _ensureAccessToken();
 
-    final uri = Uri.parse('$_baseUrl/addr/stage.json').replace(
+    final response = await _dio.get(
+      '/addr/stage.json',
       queryParameters: {'accessToken': _accessToken!, if (cd != null) 'cd': cd},
     );
-
-    final response = await http.get(uri);
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
 
     if (body['errCd'] != 0) {
       throw Exception('지역 조회 실패: ${body['errMsg']}');

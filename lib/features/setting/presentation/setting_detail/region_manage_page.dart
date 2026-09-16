@@ -6,9 +6,9 @@ import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/custom_text_field.dart';
 import 'package:musahi/core/widgets/info_card.dart';
-import 'package:musahi/features/setting/model/http_api.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
+import 'package:musahi/features/setting/repository/region_repository.dart';
 
 class RegionManagePage extends StatefulWidget {
   const RegionManagePage({super.key});
@@ -20,7 +20,7 @@ class RegionManagePage extends StatefulWidget {
 class _RegionManagePageState extends State<RegionManagePage> {
   final TextEditingController _textEditingController = TextEditingController();
 
-  final RegionApiService _regionApiService = RegionApiService(
+  final RegionRepository _regionRepository = RegionRepository(
     consumerKey: const String.fromEnvironment('SGIS_CONSUMER_KEY'),
     consumerSecret: const String.fromEnvironment('SGIS_CONSUMER_SECRET'),
   );
@@ -63,7 +63,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
       _errorMessage = null;
     });
     try {
-      final result = await _regionApiService.fetchRegions(cd: cd);
+      final result = await _regionRepository.fetchRegions(cd: cd);
       setState(() {
         _regions = result;
         _isLoading = false;
@@ -218,8 +218,11 @@ class _RegionManagePageState extends State<RegionManagePage> {
                                   size: 20,
                                   color: AppColors.muted,
                                 ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                                constraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 40,
+                                ),
                               ),
                             ],
                           ),
@@ -291,7 +294,12 @@ class _RegionManagePageState extends State<RegionManagePage> {
                       onTap: () => _onDrillDown(region),
                       trailing: TextButton(
                         onPressed: () => _onPickHere(region),
-                        child: const Text('선택'),
+                        child: Text(
+                          '선택',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ),
                     );
                   },
