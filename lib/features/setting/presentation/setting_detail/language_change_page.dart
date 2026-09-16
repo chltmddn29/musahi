@@ -1,34 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/widget/language_selection_tile.dart';
 
-enum AppLanguage {
-  korean('한국어'),
-  english('English'),
-  chinese('中文'),
-  japanese('日本語');
-
-  final String label;
-
-  const AppLanguage(this.label);
-}
-
-class LanguageChangePage extends StatefulWidget {
+class LanguageChangePage extends StatelessWidget {
   const LanguageChangePage({super.key});
-
-  @override
-  State<LanguageChangePage> createState() => _LanguageChangePageState();
-}
-
-class _LanguageChangePageState extends State<LanguageChangePage> {
-  AppLanguage _selected = AppLanguage.korean;
-
-  void _onChanged(AppLanguage? language) {
-    if (language == null) return;
-    setState(() => _selected = language);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,18 +34,25 @@ class _LanguageChangePageState extends State<LanguageChangePage> {
           clipBehavior: Clip.antiAlias,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(languages.length, (index) {
-                final language = languages[index];
-                return LanguageSelectionTile<AppLanguage>(
-                  languageName: language.label,
-                  value: language,
-                  groupValue: _selected,
-                  onChanged: _onChanged,
-                  showDivider: index != languages.length - 1,
+            child: ValueListenableBuilder<AppLanguage>(
+              valueListenable: currentLanguage,
+              builder: (context, selected, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(languages.length, (index) {
+                    final language = languages[index];
+                    return LanguageSelectionTile<AppLanguage>(
+                      languageName: language.label,
+                      value: language,
+                      groupValue: selected,
+                      onChanged: (l) {
+                        if (l != null) setLanguage(l);
+                      },
+                      showDivider: index != languages.length - 1,
+                    );
+                  }),
                 );
-              }),
+              },
             ),
           ),
         ),

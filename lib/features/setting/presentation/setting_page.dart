@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
@@ -49,6 +50,7 @@ class SettingPage extends StatelessWidget {
           ListenableBuilder(
             listenable: Listenable.merge([
               textSizeStep,
+              currentLanguage,
               InterestRegionStore.instance.regions,
               InterestRegionStore.instance.primaryCd,
               SafetyContactStore.instance.contacts,
@@ -56,10 +58,11 @@ class SettingPage extends StatelessWidget {
             builder: (context, _) => _buildGroup(
               _navItems(
                 context,
-                textSizeStep.value,
-                InterestRegionStore.instance.regions.value,
-                InterestRegionStore.instance.primaryCd.value,
-                SafetyContactStore.instance.contacts.value,
+                textSizeStepValue: textSizeStep.value,
+                language: currentLanguage.value,
+                regions: InterestRegionStore.instance.regions.value,
+                primaryCd: InterestRegionStore.instance.primaryCd.value,
+                contacts: SafetyContactStore.instance.contacts.value,
               ),
             ),
           ),
@@ -69,17 +72,18 @@ class SettingPage extends StatelessWidget {
   }
 
   List<SettingMenuItem> _navItems(
-    BuildContext context,
-    int textSizeStepValue,
-    List<RegionItem> regions,
-    String? primaryCd,
-    List<SafetyContact> contacts,
-  ) {
+    BuildContext context, {
+    required int textSizeStepValue,
+    required AppLanguage language,
+    required List<RegionItem> regions,
+    required String? primaryCd,
+    required List<SafetyContact> contacts,
+  }) {
     return [
       SettingMenuItem(
         icon: Icons.language,
         title: '언어 설정',
-        subTitle: '한국어',
+        subTitle: language.label,
         onPressed: () => context.push('/setting/language'),
       ),
       SettingMenuItem(
