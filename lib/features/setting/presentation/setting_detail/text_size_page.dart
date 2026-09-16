@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
+import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 
@@ -8,10 +9,10 @@ class TextSizePage extends StatefulWidget {
   const TextSizePage({super.key, this.initialStep = 1, this.onChanged});
 
   /// 단계별 라벨. 인덱스가 곧 단계 값이다.
-  static const List<String> stepLabels = ['작게', '보통', '크게', '매우크게'];
+  static const List<String> stepLabels = textSizeStepLabels;
 
   /// 단계별 실제 폰트 크기(sp). [stepLabels]와 인덱스가 대응된다.
-  static const List<double> fontSizes = [14, 17, 21, 26];
+  static const List<double> fontSizes = textSizeStepFontSizes;
 
   final int initialStep;
 

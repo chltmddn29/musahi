@@ -85,9 +85,8 @@ final GoRouter goRouter = GoRouter(
                   path: 'text-size',
                   builder: (context, state) => TextSizePage(
                     initialStep: textSizeStep.value,
-                    onChanged: (fontSize) => textSizeStep.value = TextSizePage
-                        .fontSizes
-                        .indexOf(fontSize),
+                    onChanged: (fontSize) =>
+                        setTextSizeStep(TextSizePage.fontSizes.indexOf(fontSize)),
                   ),
                 ),
               ],
