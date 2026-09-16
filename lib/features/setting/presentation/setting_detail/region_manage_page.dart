@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
+import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
@@ -137,7 +138,9 @@ class _RegionManagePageState extends State<RegionManagePage> {
 
   void _onComplete() {
     if (_selectionPath.isEmpty) return;
-    InterestRegionStore.instance.add(_selectionPath.last);
+    final region = _selectionPath.last;
+    InterestRegionStore.instance.add(region);
+    NotificationService.subscribeToRegion(region.cd);
     _cancelAdding();
   }
 
@@ -211,8 +214,12 @@ class _RegionManagePageState extends State<RegionManagePage> {
                                 const SizedBox(width: 8),
                               ],
                               IconButton(
-                                onPressed: () =>
-                                    InterestRegionStore.instance.remove(region),
+                                onPressed: () {
+                                  InterestRegionStore.instance.remove(region);
+                                  NotificationService.unsubscribeFromRegion(
+                                    region.cd,
+                                  );
+                                },
                                 icon: const Icon(
                                   Icons.close,
                                   size: 20,

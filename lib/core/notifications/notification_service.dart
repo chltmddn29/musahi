@@ -1,6 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:musahi/core/settings/notification_settings.dart';
+import 'package:musahi/features/setting/model/region_store.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -17,8 +19,9 @@ class NotificationService {
       }
 
       await FirebaseMessaging.instance.subscribeToTopic('region_all');
-      await FirebaseMessaging.instance.subscribeToTopic('region_236_critical');
-      await FirebaseMessaging.instance.subscribeToTopic('region_236_safe');
+      for (final region in InterestRegionStore.instance.regions.value) {
+        await subscribeToRegion(region.cd);
+      }
 
       FirebaseMessaging.onMessage.listen(_handleMessage);
     } catch (e) {
@@ -27,6 +30,20 @@ class NotificationService {
       // 막지 않도록 여기서 흡수한다.
       debugPrint('알림 초기화 실패: $e');
     }
+  }
+
+  /// 관심지역 추가 시 호출해 해당 지역의 재난문자 토픽을 구독한다.
+  static Future<void> subscribeToRegion(String cd) async {
+    await FirebaseMessaging.instance.subscribeToTopic('region_${cd}_critical');
+    await FirebaseMessaging.instance.subscribeToTopic('region_${cd}_safe');
+  }
+
+  /// 관심지역 삭제 시 호출해 해당 지역의 재난문자 토픽 구독을 해제한다.
+  static Future<void> unsubscribeFromRegion(String cd) async {
+    await FirebaseMessaging.instance.unsubscribeFromTopic(
+      'region_${cd}_critical',
+    );
+    await FirebaseMessaging.instance.unsubscribeFromTopic('region_${cd}_safe');
   }
 
   /// iOS 실기기에서는 보통 곧바로 발급되지만, 시뮬레이터는 APNS를 지원하지
@@ -46,6 +63,11 @@ class NotificationService {
     final severity = message.data['severity'] ?? '안전안내';
     final title = message.notification?.title ?? '';
     final body = message.notification?.body ?? '';
+
+    // '위급'/'긴급'은 재난문자 알림, 그 외(안전안내)는 안전 안내 알림 설정을 따른다.
+    final isDisasterAlert = severity == '위급' || severity == '긴급';
+    if (isDisasterAlert && !disasterAlertEnabled.value) return;
+    if (!isDisasterAlert && !safetyGuideAlertEnabled.value) return;
 
     final context = rootNavigatorKey.currentContext;
     if (context == null) return;
