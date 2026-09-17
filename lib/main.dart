@@ -8,6 +8,7 @@ import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
+import 'package:musahi/features/setting/repository/region_repository.dart';
 import 'package:musahi/firebase_options.dart';
 
 void main() async {
@@ -15,6 +16,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await SafetyContactStore.instance.load();
   await InterestRegionStore.instance.load();
+  await _migrateLegacyInterestRegions();
   await loadTextSizeSetting();
   await loadNotificationSettings();
   await loadLanguageSetting();
@@ -23,6 +25,17 @@ void main() async {
   await NotificationService.init();
 
   runApp(const MyApp());
+}
+
+Future<void> _migrateLegacyInterestRegions() async {
+  try {
+    final serverRegions = await RegionRepository().fetchNotificationRegions();
+    await InterestRegionStore.instance.migrateLegacyRegions(serverRegions);
+  } on FirebaseException catch (error) {
+    debugPrint('관심지역 자동 전환 실패: $error');
+  } on FormatException catch (error) {
+    debugPrint('관심지역 자동 전환 실패: $error');
+  }
 }
 
 class MyApp extends StatelessWidget {

@@ -35,8 +35,12 @@ class InterestRegionStore {
   }
 
   void add(RegionItem region) {
-    if (regions.value.any((r) => r.cd == region.cd)) return;
-    regions.value = [...regions.value, region];
+    if (regions.value.any(
+      (r) => r.cd == region.cd && r.notificationCode == region.notificationCode,
+    )) {
+      return;
+    }
+    regions.value = [...regions.value.where((r) => r.cd != region.cd), region];
     primaryCd.value ??= region.cd;
     _save();
   }
@@ -53,6 +57,42 @@ class InterestRegionStore {
     primaryCd.value = region.cd;
     _save();
   }
+
+  /// 기존 SGIS 관심지역을 재난문자 서버의 지역코드로 안전하게 전환한다.
+  ///
+  /// 전체 주소가 정확히 일치하는 서버 지역이 하나일 때만 바꾼다. 이름만 같은
+  /// 지역을 임의로 구독하지 않도록, 일치하지 않거나 모호한 항목은 보존한다.
+  Future<void> migrateLegacyRegions(List<RegionItem> serverRegions) async {
+    final matchesByName = <String, List<RegionItem>>{};
+    for (final region in serverRegions) {
+      matchesByName
+          .putIfAbsent(_normalizeAddress(region.displayName), () => [])
+          .add(region);
+    }
+
+    var changed = false;
+    String? migratedPrimaryCd;
+    final migrated = regions.value.map((region) {
+      if (region.notificationCode != null) return region;
+      final matches = matchesByName[_normalizeAddress(region.displayName)];
+      if (matches == null || matches.length != 1) return region;
+
+      final replacement = matches.single;
+      if (primaryCd.value == region.cd) {
+        migratedPrimaryCd = replacement.cd;
+      }
+      changed = true;
+      return replacement;
+    }).toList();
+
+    if (!changed) return;
+    regions.value = migrated;
+    primaryCd.value = migratedPrimaryCd ?? primaryCd.value;
+    await _save();
+  }
+
+  static String _normalizeAddress(String address) =>
+      normalizeRegionName(address);
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();

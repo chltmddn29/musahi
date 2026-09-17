@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/notifications/notification_sync_status.dart';
 import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
@@ -24,6 +25,7 @@ class SettingPage extends StatelessWidget {
       child: ListView(
         children: [
           const SizedBox(height: 100),
+          const NotificationSyncStatus(),
           ListenableBuilder(
             listenable: Listenable.merge([
               disasterAlertEnabled,

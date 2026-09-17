@@ -1,6 +1,11 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:musahi/core/notifications/notification_topic_sync.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
 
@@ -9,7 +14,40 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 class NotificationService {
   const NotificationService._();
 
-  static Future<void> init() async {
+  static final syncError = ValueNotifier<String?>(null);
+  static final _topicSync = NotificationTopicSync(
+    subscribe: (topic) => FirebaseMessaging.instance.subscribeToTopic(topic),
+    unsubscribe: (topic) =>
+        FirebaseMessaging.instance.unsubscribeFromTopic(topic),
+  );
+  static bool _listening = false;
+  static bool _ready = false;
+  static Future<void>? _initialization;
+  static AppLifecycleListener? _lifecycleListener;
+
+  static Future<void> init() {
+    return _initialization ??= _initialize().whenComplete(() {
+      _initialization = null;
+    });
+  }
+
+  static Future<void> _initialize() async {
+    if (!_listening) {
+      _listening = true;
+      disasterAlertEnabled.addListener(synchronizeSubscriptions);
+      safetyGuideAlertEnabled.addListener(synchronizeSubscriptions);
+      InterestRegionStore.instance.regions.addListener(
+        synchronizeSubscriptions,
+      );
+      FirebaseMessaging.onMessage.listen(_handleMessage);
+      FirebaseMessaging.instance.onTokenRefresh.listen(
+        (_) => synchronizeSubscriptions(),
+        onError: (Object error, StackTrace stack) => _reportFailure(error),
+      );
+      _lifecycleListener ??= AppLifecycleListener(
+        onResume: synchronizeSubscriptions,
+      );
+    }
     try {
       final settings = await FirebaseMessaging.instance.requestPermission();
       debugPrint('알림 권한 상태: ${settings.authorizationStatus}');
@@ -18,45 +56,68 @@ class NotificationService {
         await _waitForApnsToken();
       }
 
-      await FirebaseMessaging.instance.subscribeToTopic('region_all');
-      for (final region in InterestRegionStore.instance.regions.value) {
-        await subscribeToRegion(region.cd);
-      }
-
-      FirebaseMessaging.onMessage.listen(_handleMessage);
-    } catch (e) {
-      // 웹은 dart:io Platform을 지원하지 않고, 시뮬레이터 등은 APNS 토큰이
-      // 끝내 발급되지 않을 수 있다 — 알림 초기화 실패가 앱 구동 자체를
-      // 막지 않도록 여기서 흡수한다.
-      debugPrint('알림 초기화 실패: $e');
+      _ready = true;
+      await synchronizeSubscriptions();
+    } on FirebaseException catch (error) {
+      _reportFailure(error);
+    } on PlatformException catch (error) {
+      _reportFailure(error);
+    } on TimeoutException catch (error) {
+      _reportFailure(error);
     }
   }
 
-  /// 관심지역 추가 시 호출해 해당 지역의 재난문자 토픽을 구독한다.
-  static Future<void> subscribeToRegion(String cd) async {
-    await FirebaseMessaging.instance.subscribeToTopic('region_${cd}_critical');
-    await FirebaseMessaging.instance.subscribeToTopic('region_${cd}_safe');
+  static Future<void> synchronizeSubscriptions() async {
+    if (!_ready) {
+      await init();
+      return;
+    }
+    final regions = InterestRegionStore.instance.regions.value;
+    final topics = NotificationTopicSync.topicsFor(
+      regionCodes: regions.map((r) => r.notificationCode).nonNulls,
+      disasterEnabled: disasterAlertEnabled.value,
+      safetyEnabled: safetyGuideAlertEnabled.value,
+    );
+    try {
+      await _topicSync.sync(
+        topics,
+        legacyTopics: {
+          'region_all',
+          'region_236_critical',
+          'region_236_safe',
+          for (final region in regions)
+            if (region.notificationCode == null) ...[
+              'region_${region.cd}_critical',
+              'region_${region.cd}_safe',
+            ],
+        },
+      );
+      syncError.value = null;
+      debugPrint(
+        '알림 설정 동기화 완료: 재난문자=${disasterAlertEnabled.value}, '
+        '안전안내=${safetyGuideAlertEnabled.value}, '
+        '구독 토픽=${topics.isEmpty ? '없음' : topics.join(', ')}',
+      );
+    } on FirebaseException catch (error) {
+      _reportFailure(error);
+    } on PlatformException catch (error) {
+      _reportFailure(error);
+    }
   }
 
-  /// 관심지역 삭제 시 호출해 해당 지역의 재난문자 토픽 구독을 해제한다.
-  static Future<void> unsubscribeFromRegion(String cd) async {
-    await FirebaseMessaging.instance.unsubscribeFromTopic(
-      'region_${cd}_critical',
-    );
-    await FirebaseMessaging.instance.unsubscribeFromTopic('region_${cd}_safe');
+  static void _reportFailure(Object error) {
+    debugPrint('알림 설정 동기화 실패: $error');
+    syncError.value = '알림 설정을 서버에 반영하지 못했습니다. 연결 후 다시 시도해주세요.';
   }
 
   /// iOS 실기기에서는 보통 곧바로 발급되지만, 시뮬레이터는 APNS를 지원하지
   /// 않아 [FirebaseMessaging.getAPNSToken]이 계속 null이거나 예외를 던진다.
   static Future<void> _waitForApnsToken() async {
     for (var retries = 0; retries < 10; retries++) {
-      try {
-        if (await FirebaseMessaging.instance.getAPNSToken() != null) return;
-      } catch (_) {
-        return;
-      }
+      if (await FirebaseMessaging.instance.getAPNSToken() != null) return;
       await Future.delayed(const Duration(seconds: 1));
     }
+    throw TimeoutException('APNS 토큰을 받지 못했습니다.');
   }
 
   static void _handleMessage(RemoteMessage message) {

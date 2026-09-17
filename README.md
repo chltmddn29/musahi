@@ -1,17 +1,32 @@
 # musahi
 
-## 관심지역(SGIS Open API) 자격증명 설정
+## 관심지역과 알림
 
-`관심지역 관리` 화면은 통계청 SGIS Open API를 사용한다. `consumer_key`/`consumer_secret`이
-클라이언트 바이너리에 포함되면 디컴파일 등으로 유출될 수 있어, 인증과 조회는 모두
-Firebase Functions의 `sgisRegions`(`functions/src/index.ts`)가 대신 수행하고 앱은 이
-함수만 호출한다.
+`관심지역 관리`는 Firebase Functions의 `sgisRegions`를 통해 SGIS 전체
+행정구역을 단계별로 검색한다. SGIS 자격증명은 서버 시크릿으로만 보관한다.
+선택한 동·읍·면의 이름이 Firebase 프로젝트 `musahi` Firestore 데이터베이스의
+`regions` 컬렉션에 수집된 재난문자 수신지역과 일치하면, 가장 세분화된 일치 항목
+(없으면 상위 시군구·시도)의 코드를 사용해 `region_<code>_critical` /
+`region_<code>_safe` FCM 토픽을 구독한다.
 
-로컬에서 함수를 실행/배포하려면 Firebase Functions 시크릿으로 키를 등록한다.
+Firebase 설정과 `regions` 컬렉션에 대한 클라이언트 읽기 권한이 필요하다.
+클라이언트 쓰기 권한은 허용하지 않는다. 지역이 없으면 수집 함수의 실행 상태와
+`DISASTER_API_KEY` 서버 시크릿 설정을 확인한다.
 
-```bash
-firebase functions:secrets:set SGIS_CONSUMER_KEY
-firebase functions:secrets:set SGIS_CONSUMER_SECRET
-```
+SGIS 코드와 재난문자 수신지역 코드는 호환되지 않는다. 앱 시작 시 기존 SGIS
+관심지역의 전체 주소가 서버 지역과 정확히 한 건 일치하면 FCM 지역코드로 자동
+전환한다. 선택 경로에 해당하는 재난문자 수신지역이 없으면 구독을 만들지 않고
+화면에서 원인을 표시한다.
+앱의 지역 검색에는 SGIS 자격증명이나 `--dart-define`이 더 이상 필요 없다.
 
-키를 설정하지 않으면 관심지역 검색 기능만 동작하지 않고 나머지 앱 기능은 정상 동작한다.
+알림 스위치와 관심지역 변경은 FCM 구독/해제에 반영된다. 공통 `region_all`과
+이전 하드코딩 구독은 해제한다. 포그라운드 표시도 알림 스위치로 필터링한다.
+동기화 실패는 설정/관심지역 화면에 표시하며, 재시도 버튼·앱 재진입·토큰 갱신 시
+다시 동기화한다. 오프라인에서는 구독 해제가 완료되기 전까지 기존 알림이 올 수 있다.
+
+## 기존 SGIS 프록시
+
+서버의 `sgisRegions` 함수는 기존 클라이언트 호환용으로 남아 있다.
+인증은 서버에서만 수행하며, 배포 시 Firebase Functions 시크릿
+`SGIS_CONSUMER_KEY`, `SGIS_CONSUMER_SECRET`을 설정해야 한다.
+앱 소스나 빌드 인자에 SGIS 시크릿을 넣지 않는다.
