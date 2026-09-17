@@ -25,7 +25,7 @@ class LanguageSelectionTile<T> extends StatelessWidget {
     return Semantics(
       selected: _isSelected,
       button: true,
-      label: languageName,
+      enabled: onChanged != null,
       child: InkWell(
         onTap: onChanged == null ? null : () => onChanged!(value),
         child: Column(
@@ -36,7 +36,9 @@ class LanguageSelectionTile<T> extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(languageName, style: AppTextStyles.label),
-                  ExcludeSemantics(child: _RadioIndicator(isSelected: _isSelected)),
+                  ExcludeSemantics(
+                    child: _RadioIndicator(isSelected: _isSelected),
+                  ),
                 ],
               ),
             ),
@@ -70,15 +72,15 @@ class _RadioIndicator extends StatelessWidget {
       ),
       child: isSelected
           ? Center(
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-          ),
-        ),
-      )
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+              ),
+            )
           : null,
     );
   }
