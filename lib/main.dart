@@ -46,10 +46,9 @@ Future<void> _migrateLegacyInterestRegions() async {
   try {
     final serverRegions = await RegionRepository().fetchNotificationRegions();
     await InterestRegionStore.instance.migrateLegacyRegions(serverRegions);
-  } on FirebaseException catch (error) {
+  } catch (error, stack) {
     debugPrint('관심지역 자동 전환 실패: $error');
-  } on FormatException catch (error) {
-    debugPrint('관심지역 자동 전환 실패: $error');
+    debugPrintStack(stackTrace: stack);
   }
 }
 

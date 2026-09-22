@@ -329,7 +329,11 @@ class _RegionManagePageState extends State<RegionManagePage> {
                     children: [
                       Text(_errorMessage!),
                       TextButton(
-                        onPressed: _loadRegions,
+                        onPressed: () => _loadRegions(
+                          cd: _selectionPath.isEmpty
+                              ? null
+                              : _selectionPath.last.cd,
+                        ),
                         child: const Text('다시 시도'),
                       ),
                     ],
