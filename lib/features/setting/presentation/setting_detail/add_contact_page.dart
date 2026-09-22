@@ -97,44 +97,48 @@ class _AddContactPageState extends State<AddContactPage> {
               RegExp(
                 r'^\d{3}-\d{3,4}-\d{4}$',
               ).hasMatch(_phoneController.text.trim());
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              CustomTextField(
-                label: '이름',
-                hintText: '이름을 입력하세요',
-                controller: _nameController,
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                inputFormatters: [
-                  const TextInputFormatter.withFunction(_formatPhoneNumber),
-                ],
-                label: '전화번호',
-                hintText: '010-0000-0000',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 20),
-              const Text('관계', style: AppTextStyles.cardTitle),
-              const SizedBox(height: 10),
-              CategorySelector(
-                categories: _relations,
-                selectedCategory: _relation,
-                onCategorySelected: (value) =>
-                    setState(() => _relation = value),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: CustomElevatedButton(
-                  onPressed: canSubmit ? _submit : null,
-                  child: _isEditing ? '수정' : '추가',
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                CustomTextField(
+                  label: '이름',
+                  hintText: '이름을 입력하세요',
+                  controller: _nameController,
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+                CustomTextField(
+                  inputFormatters: [
+                    const TextInputFormatter.withFunction(
+                      _formatPhoneNumber,
+                    ),
+                  ],
+                  label: '전화번호',
+                  hintText: '010-0000-0000',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 20),
+                const Text('관계', style: AppTextStyles.cardTitle),
+                const SizedBox(height: 10),
+                CategorySelector(
+                  categories: _relations,
+                  selectedCategory: _relation,
+                  onCategorySelected: (value) =>
+                      setState(() => _relation = value),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomElevatedButton(
+                    onPressed: canSubmit ? _submit : null,
+                    child: _isEditing ? '수정' : '추가',
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           );
         },
       ),

@@ -14,7 +14,15 @@ class InfoPage extends StatefulWidget {
 
 class _InfoPageState extends State<InfoPage> {
   static const String allCategory = '전체';
-  final List<String> category = [allCategory, '폭염', '지진', '태풍', '호우', '기타'];
+  static const String etcCategory = '기타';
+  final List<String> category = [
+    allCategory,
+    '폭염',
+    '지진',
+    '태풍',
+    '호우',
+    etcCategory,
+  ];
   String selectedCategory = allCategory;
 
   @override
@@ -46,11 +54,15 @@ class _InfoPageState extends State<InfoPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final allItems = snapshot.data!;
-                final items = selectedCategory == allCategory
-                    ? allItems
-                    : allItems
-                          .where((e) => e.category == selectedCategory)
-                          .toList();
+                final items = switch (selectedCategory) {
+                  allCategory => allItems,
+                  etcCategory => allItems
+                      .where((e) => !category.contains(e.category))
+                      .toList(),
+                  _ => allItems
+                      .where((e) => e.category == selectedCategory)
+                      .toList(),
+                };
                 if (items.isEmpty) {
                   return const Center(child: Text('해당 카테고리의 정보가 없습니다.'));
                 }

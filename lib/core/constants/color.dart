@@ -7,6 +7,7 @@ class AppColors {
   static const Color primary = Color(0xFF5E86B0); // 차분한 파랑 — 앱바, 주요 버튼, 강조 요소
   static const Color background = Color(0xFFFAFAFA);
   static const Color surface = Color(0xFFFFFFFF); // 카드
+  static const Color messageSurface = Color(0xFFF5F5F7);
   static const Color text = Color(0xFF1C1C1E);
   static const Color muted = Color(0xFF8E8E93);
 
