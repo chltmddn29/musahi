@@ -98,10 +98,11 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                   child: SettingsGroup(
                     children: [
                       for (final contact in filtered)
-                        InfoCard.settingsTile(
+                        InfoCard(
+                          flat: true,
                           leading: InfoCardLeading.initial(contact.name),
-                          label: contact.name,
-                          value: '${contact.relation} · ${contact.phone}',
+                          title: contact.name,
+                          caption: '${contact.relation} · ${contact.phone}',
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

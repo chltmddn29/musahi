@@ -11,6 +11,7 @@ import 'package:musahi/features/setting/presentation/setting_detail/safety_conta
 import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/presentation/setting_page.dart';
+import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/share_page.dart';
 import 'package:musahi/features/shelter/shelter_page.dart';
 
@@ -52,6 +53,18 @@ final GoRouter goRouter = GoRouter(
             GoRoute(
               path: '/share',
               builder: (context, state) => const SharePage(),
+              routes: [
+                GoRoute(
+                  path: 'complete',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (context, state) {
+                    final preview = state.extra;
+                    return ShareCompletePage(
+                      preview: preview is SafetySharePreview ? preview : null,
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),

@@ -23,8 +23,8 @@ class SettingPage extends StatelessWidget {
     return BaseScaffold(
       appBar: const CustomAppBar(title: '설정', icon: false),
       child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
-          const SizedBox(height: 100),
           const NotificationSyncStatus(),
           ListenableBuilder(
             listenable: Listenable.merge([
@@ -128,16 +128,20 @@ class SettingPage extends StatelessWidget {
 
 Widget _buildGroup(List<SettingMenuItem> items) {
   return Container(
+    // InkWell 리플이 둥근 모서리를 넘지 않도록 잘라낸다.
+    clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(14),
+      boxShadow: AppColors.cardShadow,
     ),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 0; i < items.length; i++) ...[
           SettingMenuTile(menuItem: items[i]),
           if (i != items.length - 1)
-            const Divider(height: 1, color: AppColors.divider, thickness: 2),
+            const Divider(height: 1, thickness: 1, color: AppColors.divider),
         ],
       ],
     ),
