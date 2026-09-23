@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:musahi/core/utils/category_selector.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
@@ -73,6 +74,8 @@ class _InfoPageState extends State<InfoPage> {
                       title: item.title,
                       severity: item.severity,
                       time: item.createdAt,
+                      onTap: () =>
+                          context.push('/info/detail', extra: item),
                     );
                   },
                   separatorBuilder: (context, idx) =>
