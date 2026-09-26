@@ -15,7 +15,9 @@ import 'package:musahi/features/setting/presentation/setting_detail/text_size_pa
 import 'package:musahi/features/setting/presentation/setting_page.dart';
 import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/share_page.dart';
-import 'package:musahi/features/shelter/shelter_page.dart';
+import 'package:musahi/features/shelter/model/shelter_route.dart';
+import 'package:musahi/features/shelter/presentation/shelter_page.dart';
+import 'package:musahi/features/shelter/presentation/shelter_route_page.dart';
 
 final GoRouter goRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
@@ -48,6 +50,15 @@ final GoRouter goRouter = GoRouter(
             GoRoute(
               path: '/shelter',
               builder: (context, state) => const ShelterPage(),
+              routes: [
+                GoRoute(
+                  path: 'route',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (context, state) => ShelterRoutePage(
+                    target: state.extra as RouteTarget,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

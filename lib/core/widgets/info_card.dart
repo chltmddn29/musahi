@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
+import 'package:musahi/core/utils/format_distance.dart';
 
 /// 캡션 크기. [small] 12.5sp(리스트 보조텍스트), [medium] 14sp(온보딩 설명문).
 enum CaptionSize { small, medium }
@@ -105,7 +106,7 @@ class InfoCard extends StatelessWidget {
         caption: address,
         onTap: onTap,
         trailing: Text(
-          '$distanceMeters m',
+          formatDistance(distanceMeters),
           style: AppTextStyles.label.copyWith(color: AppColors.primary),
         ),
       );
