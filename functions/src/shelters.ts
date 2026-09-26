@@ -5,6 +5,7 @@ import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
 import {Firestore} from "firebase-admin/firestore";
 import {safeErrorSummary} from "./errors";
+import {toNumber} from "./query";
 
 // 민방위 대피시설 API(공공데이터포털)는 위치 검색을 지원하지 않아 전국 데이터(약 2.3만 건)를
 // 주기적으로 받아 Firestore에 청크로 저장하고, 조회 시 메모리에서 거리순 정렬한다.
@@ -102,10 +103,18 @@ async function saveShelterChunks(db: Firestore, rows: ShelterRow[]): Promise<voi
         // Firestore는 중첩 배열을 허용하지 않아 JSON 문자열로 저장한다.
         await collection.doc(`${version}-${i}`).set({rows: JSON.stringify(chunk)});
     }
-    await db.doc(INDEX_DOC).set({version, chunkCount});
+    // 동기화가 겹쳐도 더 새로운 버전만 활성화한다.
+    const indexRef = db.doc(INDEX_DOC);
+    const activeVersion = await db.runTransaction(async (tx) => {
+        const current = (await tx.get(indexRef)).data();
+        if (current && Number(current.version) > Number(version)) return String(current.version);
+        tx.set(indexRef, {version, chunkCount});
+        return version;
+    });
 
+    // 활성 버전보다 오래된 청크만 지워 동시에 저장 중인 새 버전은 건드리지 않는다.
     const stale = (await collection.listDocuments())
-        .filter((doc) => !doc.id.startsWith(`${version}-`));
+        .filter((doc) => Number(doc.id.split("-")[0]) < Number(activeVersion));
     await Promise.all(stale.map((doc) => doc.delete()));
 }
 
@@ -164,8 +173,8 @@ export function createShelterFunctions(db: Firestore) {
     const nearbyShelters = onRequest(
         {region: "asia-northeast3", memory: "512MiB"},
         async (req, res) => {
-            const lat = Number(req.query.lat);
-            const lng = Number(req.query.lng);
+            const lat = toNumber(req.query.lat);
+            const lng = toNumber(req.query.lng);
             const requested = Number(req.query.limit);
             const limit = Number.isInteger(requested) && requested > 0 ?
                 Math.min(requested, MAX_LIMIT) : DEFAULT_LIMIT;

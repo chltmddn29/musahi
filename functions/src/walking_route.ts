@@ -3,6 +3,7 @@ import * as logger from "firebase-functions/logger";
 import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
 import {safeErrorSummary} from "./errors";
+import {toNumber} from "./query";
 
 const tmapAppKey = defineSecret("TMAP_APP_KEY");
 
@@ -45,7 +46,7 @@ export const walkingRoute = onRequest(
     {region: "asia-northeast3", secrets: [tmapAppKey]},
     async (req, res) => {
         const [startLat, startLng, endLat, endLng] =
-            ["startLat", "startLng", "endLat", "endLng"].map((key) => Number(req.query[key]));
+            ["startLat", "startLng", "endLat", "endLng"].map((key) => toNumber(req.query[key]));
         if (![startLat, startLng, endLat, endLng].every(Number.isFinite)) {
             res.status(400).json({error: "startLat, startLng, endLat, endLng가 필요합니다."});
             return;
