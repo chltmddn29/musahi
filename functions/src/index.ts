@@ -8,6 +8,7 @@ import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import {createShelterFunctions} from "./shelters";
+import {safeErrorSummary} from "./errors";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -64,7 +65,7 @@ async function fetchDisasterMessagesPage(
         } catch (error) {
             lastError = error;
             if (attempt === retries) throw error;
-            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { error, page });
+            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { ...safeErrorSummary(error), page });
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
     }
@@ -208,7 +209,7 @@ export const pollDisasterAlerts = onSchedule(
             await db.collection("system").doc("lastProcessed").set({ sn: maxSn });
 
         } catch (error) {
-            logger.error("재난문자 API 호출 실패", { error });
+            logger.error("재난문자 API 호출 실패", safeErrorSummary(error));
         }
     }
 );
@@ -310,7 +311,7 @@ export const sgisRegions = onRequest(
             // 캐시된 토큰이 서버 쪽에서 만료됐을 수 있으니 다음 요청에 재발급하도록 초기화한다.
             sgisAccessToken = null;
             sgisAccessTokenExpiresAt = null;
-            logger.error("SGIS 지역 조회 중 오류", { error });
+            logger.error("SGIS 지역 조회 중 오류", safeErrorSummary(error));
             res.status(502).json({ error: "지역 조회 실패" });
         }
     }
