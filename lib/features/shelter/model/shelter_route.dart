@@ -11,6 +11,18 @@ class RouteStep {
   final String description;
 
   const RouteStep({required this.direction, required this.description});
+
+  static const headToShelter = RouteStep(
+    direction: TurnDirection.straight,
+    description: '대피소 방향으로 이동하세요',
+  );
+
+  factory RouteStep.fromJson(Map<String, dynamic> json) => RouteStep(
+    direction:
+        TurnDirection.values.asNameMap()[json['direction']] ??
+        TurnDirection.straight,
+    description: json['description'] as String,
+  );
 }
 
 class ShelterRoute {
@@ -25,4 +37,22 @@ class ShelterRoute {
     required this.remainingTime,
     required this.nextStep,
   });
+
+  factory ShelterRoute.fromJson(Map<String, dynamic> json) {
+    final steps = json['steps'] as List;
+    return ShelterRoute(
+      path: [
+        for (final point in json['path'] as List)
+          Coordinate(
+            (point[0] as num).toDouble(),
+            (point[1] as num).toDouble(),
+          ),
+      ],
+      remainingMeters: (json['totalDistance'] as num).toInt(),
+      remainingTime: Duration(seconds: (json['totalTime'] as num).toInt()),
+      nextStep: steps.isEmpty
+          ? RouteStep.headToShelter
+          : RouteStep.fromJson(steps.first as Map<String, dynamic>),
+    );
+  }
 }

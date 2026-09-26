@@ -1,7 +1,7 @@
-import 'package:musahi/features/shelter/model/shelter.dart';
+import 'package:dio/dio.dart';
+import 'package:musahi/core/constants/api.dart';
 import 'package:musahi/features/shelter/model/shelter_route.dart';
 
-/// 도보 경로 데이터 소스. 현재는 목업이며, 경로 API·위치 스트림 연동 시 교체한다.
 class RouteRepository {
   RouteRepository._();
 
@@ -9,24 +9,41 @@ class RouteRepository {
 
   static const _walkingMetersPerMinute = 70;
 
-  /// 이동에 따라 갱신되는 도보 경로를 흘려보낸다.
-  Stream<ShelterRoute> watchWalkingRoute(RouteTarget target) {
-    final (:origin, :destination) = target;
-    final corner = Coordinate(origin.latitude, destination.location.longitude);
-    final meters = destination.distanceMeters;
+  final _dio = Dio(BaseOptions(baseUrl: functionsBaseUrl));
 
-    return Stream.value(
-      ShelterRoute(
-        path: [origin, corner, destination.location],
-        remainingMeters: meters,
-        remainingTime: Duration(
-          minutes: (meters / _walkingMetersPerMinute).ceil(),
-        ),
-        nextStep: const RouteStep(
-          direction: TurnDirection.right,
-          description: '300m 앞에서 우회전하세요',
-        ),
+  /// 도보 경로를 흘려보낸다. 위치 추적 기반 재탐색은 이 스트림에 이어 붙인다.
+  Stream<ShelterRoute> watchWalkingRoute(RouteTarget target) =>
+      Stream.fromFuture(_fetchWalkingRoute(target));
+
+  Future<ShelterRoute> _fetchWalkingRoute(RouteTarget target) async {
+    final (:origin, :destination) = target;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/walkingRoute',
+        queryParameters: {
+          'startLat': origin.latitude,
+          'startLng': origin.longitude,
+          'endLat': destination.location.latitude,
+          'endLng': destination.location.longitude,
+        },
+      );
+      return ShelterRoute.fromJson(response.data!);
+    } on DioException {
+      // 재난 상황에서 안내가 끊기지 않도록 경로 API 실패 시 직선 경로로 대신한다.
+      return _straightLineRoute(target);
+    }
+  }
+
+  ShelterRoute _straightLineRoute(RouteTarget target) {
+    final (:origin, :destination) = target;
+    final meters = destination.distanceMeters;
+    return ShelterRoute(
+      path: [origin, destination.location],
+      remainingMeters: meters,
+      remainingTime: Duration(
+        minutes: (meters / _walkingMetersPerMinute).ceil(),
       ),
+      nextStep: RouteStep.headToShelter,
     );
   }
 }

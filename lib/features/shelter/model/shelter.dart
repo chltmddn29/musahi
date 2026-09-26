@@ -19,4 +19,15 @@ class Shelter {
     required this.location,
     required this.distanceMeters,
   });
+
+  factory Shelter.fromJson(Map<String, dynamic> json) => Shelter(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    address: json['address'] as String,
+    location: Coordinate(
+      (json['lat'] as num).toDouble(),
+      (json['lng'] as num).toDouble(),
+    ),
+    distanceMeters: (json['distanceMeters'] as num).toInt(),
+  );
 }

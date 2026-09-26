@@ -7,6 +7,7 @@ import axios from "axios";
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
+import {createShelterFunctions} from "./shelters";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -314,3 +315,5 @@ export const sgisRegions = onRequest(
         }
     }
 );
+export const {syncShelters, nearbyShelters} = createShelterFunctions(db);
+export {walkingRoute} from "./walking_route";

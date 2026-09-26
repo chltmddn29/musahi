@@ -30,7 +30,7 @@ class RouteSummaryChip extends StatelessWidget {
         ],
       ),
       child: Text(
-        '도보 ${remainingTime.inMinutes}분 · ${formatDistance(remainingMeters)} 남음',
+        '도보 ${(remainingTime.inSeconds / 60).ceil()}분 · ${formatDistance(remainingMeters)} 남음',
         style: AppTextStyles.label.copyWith(
           color: AppColors.text,
           fontSize: 13.5,
