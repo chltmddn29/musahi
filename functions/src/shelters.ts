@@ -4,6 +4,7 @@ import * as logger from "firebase-functions/logger";
 import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
 import {Firestore} from "firebase-admin/firestore";
+import {safeErrorSummary} from "./errors";
 
 // 민방위 대피시설 API(공공데이터포털)는 위치 검색을 지원하지 않아 전국 데이터(약 2.3만 건)를
 // 주기적으로 받아 Firestore에 청크로 저장하고, 조회 시 메모리에서 거리순 정렬한다.
@@ -14,7 +15,10 @@ const SHELTER_API_URL = "https://apis.data.go.kr/1741000/civil_defense_shelter_i
 const PAGE_SIZE = 100; // API 최대값
 const CHUNK_SIZE = 2000;
 const CHUNK_COLLECTION = "shelterChunks";
+// 조회에 쓸 청크 버전을 가리키는 문서. 새 청크를 모두 저장한 뒤에만 전환한다.
+const INDEX_DOC = "system/shelterIndex";
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
 
 /** [id, 이름, 주소, 위도, 경도] — 문서 크기를 줄이기 위한 압축 형태 */
@@ -50,17 +54,14 @@ async function fetchShelterPage(encodedKey: string, pageNo: number): Promise<any
         params: {returnType: "json", pageNo, numOfRows: PAGE_SIZE},
         timeout: 60000,
     });
-    const item = response.data?.response?.body?.items?.item;
-    if (item === undefined) {
-        // 인증키 오류 등은 items 없이 header에 사유가 담겨 온다.
-        logger.warn("민방위 대피시설 API 응답에 items가 없음", {
-            pageNo,
-            status: response.status,
-            header: response.data?.response?.header,
-            preview: JSON.stringify(response.data).slice(0, 500),
-        });
-        return [];
+    const body = response.data?.response?.body;
+    if (!body) {
+        // 인증키 오류 등은 body 없이 오류 사유만 온다. 빈 페이지로 보면 일부 데이터로
+        // 기존 대피소 목록을 덮어쓰게 되므로 동기화를 실패시킨다. (응답에 키는 없다)
+        throw new Error(`민방위 대피시설 API 오류 (page ${pageNo}): ${JSON.stringify(response.data).slice(0, 300)}`);
     }
+    const item = body.items?.item;
+    if (item === undefined) return [];
     // 결과가 1건이면 배열이 아닌 객체로 온다.
     return Array.isArray(item) ? item : [item];
 }
@@ -93,18 +94,19 @@ async function fetchAllShelters(encodedKey: string): Promise<ShelterRow[]> {
 
 async function saveShelterChunks(db: Firestore, rows: ShelterRow[]): Promise<void> {
     const collection = db.collection(CHUNK_COLLECTION);
+    const version = String(Date.now());
     const chunkCount = Math.ceil(rows.length / CHUNK_SIZE);
 
     for (let i = 0; i < chunkCount; i++) {
         const chunk = rows.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
         // Firestore는 중첩 배열을 허용하지 않아 JSON 문자열로 저장한다.
-        await collection.doc(String(i)).set({rows: JSON.stringify(chunk)});
+        await collection.doc(`${version}-${i}`).set({rows: JSON.stringify(chunk)});
     }
+    await db.doc(INDEX_DOC).set({version, chunkCount});
 
-    const existing = await collection.listDocuments();
-    await Promise.all(
-        existing.filter((doc) => Number(doc.id) >= chunkCount).map((doc) => doc.delete())
-    );
+    const stale = (await collection.listDocuments())
+        .filter((doc) => !doc.id.startsWith(`${version}-`));
+    await Promise.all(stale.map((doc) => doc.delete()));
 }
 
 let cachedRows: ShelterRow[] = [];
@@ -113,8 +115,13 @@ let cachedAt = 0;
 async function loadShelterRows(db: Firestore): Promise<ShelterRow[]> {
     if (cachedRows.length > 0 && Date.now() - cachedAt < CACHE_TTL_MS) return cachedRows;
 
-    const snapshot = await db.collection(CHUNK_COLLECTION).get();
-    cachedRows = snapshot.docs.flatMap((doc) => JSON.parse(doc.data().rows) as ShelterRow[]);
+    const index = (await db.doc(INDEX_DOC).get()).data();
+    if (!index) return [];
+
+    const refs = Array.from({length: index.chunkCount}, (_, i) =>
+        db.collection(CHUNK_COLLECTION).doc(`${index.version}-${i}`));
+    const chunks = await db.getAll(...refs);
+    cachedRows = chunks.flatMap((doc) => JSON.parse(doc.data()?.rows ?? "[]") as ShelterRow[]);
     cachedAt = Date.now();
     return cachedRows;
 }
@@ -139,13 +146,18 @@ export function createShelterFunctions(db: Firestore) {
             secrets: [shelterApiKey],
         },
         async () => {
-            const rows = await fetchAllShelters(toEncodedKey(shelterApiKey.value()));
-            if (rows.length === 0) {
-                logger.warn("민방위 대피시설 데이터가 비어 있어 저장을 건너뜀");
-                return;
+            try {
+                const rows = await fetchAllShelters(toEncodedKey(shelterApiKey.value()));
+                if (rows.length === 0) {
+                    logger.warn("민방위 대피시설 데이터가 비어 있어 저장을 건너뜀");
+                    return;
+                }
+                await saveShelterChunks(db, rows);
+                logger.info(`민방위 대피시설 ${rows.length}건 동기화 완료`);
+            } catch (error) {
+                logger.error("민방위 대피시설 동기화 실패, 기존 데이터 유지", safeErrorSummary(error));
+                throw new Error("민방위 대피시설 동기화 실패");
             }
-            await saveShelterChunks(db, rows);
-            logger.info(`민방위 대피시설 ${rows.length}건 동기화 완료`);
         }
     );
 
@@ -154,7 +166,9 @@ export function createShelterFunctions(db: Firestore) {
         async (req, res) => {
             const lat = Number(req.query.lat);
             const lng = Number(req.query.lng);
-            const limit = Math.min(Number(req.query.limit) || 10, MAX_LIMIT);
+            const requested = Number(req.query.limit);
+            const limit = Number.isInteger(requested) && requested > 0 ?
+                Math.min(requested, MAX_LIMIT) : DEFAULT_LIMIT;
             if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
                 res.status(400).json({error: "lat, lng가 필요합니다."});
                 return;
@@ -171,7 +185,7 @@ export function createShelterFunctions(db: Firestore) {
 
                 res.status(200).json({shelters});
             } catch (error) {
-                logger.error("대피소 조회 실패", {error});
+                logger.error("대피소 조회 실패", safeErrorSummary(error));
                 res.status(500).json({error: "대피소 조회 실패"});
             }
         }

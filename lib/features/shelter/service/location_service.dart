@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 
@@ -16,11 +18,27 @@ class LocationService {
 
   static final instance = LocationService._();
 
+  /// 실내 등 GPS가 약할 때 로딩이 끝나지 않는 것을 막는다.
+  static const _timeLimit = Duration(seconds: 10);
+
   /// 권한을 확인·요청한 뒤 현재 위치를 반환한다.
+  /// 제한 시간 안에 못 받으면 마지막으로 알려진 위치를 쓴다.
   Future<Coordinate> currentLocation() async {
     await _ensurePermission();
-    final position = await Geolocator.getCurrentPosition();
+    final position = await _currentOrLastKnownPosition();
     return Coordinate(position.latitude, position.longitude);
+  }
+
+  Future<Position> _currentOrLastKnownPosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(timeLimit: _timeLimit),
+      );
+    } on TimeoutException {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) return lastKnown;
+      throw const LocationException('현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    }
   }
 
   Future<void> _ensurePermission() async {

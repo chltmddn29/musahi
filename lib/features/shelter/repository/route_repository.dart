@@ -28,8 +28,13 @@ class RouteRepository {
         },
       );
       return ShelterRoute.fromJson(response.data!);
-    } on DioException {
-      // 재난 상황에서 안내가 끊기지 않도록 경로 API 실패 시 직선 경로로 대신한다.
+    } on Object catch (error) {
+      // 재난 상황에서 안내가 끊기지 않도록 호출·파싱 실패 시 직선 경로로 대신한다.
+      if (error is! DioException &&
+          error is! FormatException &&
+          error is! TypeError) {
+        rethrow;
+      }
       return _straightLineRoute(target);
     }
   }

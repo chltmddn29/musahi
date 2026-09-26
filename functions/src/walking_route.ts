@@ -2,6 +2,7 @@ import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
+import {safeErrorSummary} from "./errors";
 
 const tmapAppKey = defineSecret("TMAP_APP_KEY");
 
@@ -65,7 +66,7 @@ export const walkingRoute = onRequest(
             );
             res.status(200).json(simplifyRoute(response.data.features ?? []));
         } catch (error) {
-            logger.error("TMAP 도보 경로 조회 실패", {error});
+            logger.error("TMAP 도보 경로 조회 실패", safeErrorSummary(error));
             res.status(502).json({error: "경로 조회 실패"});
         }
     }
