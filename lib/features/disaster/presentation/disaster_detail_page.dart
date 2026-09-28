@@ -54,11 +54,14 @@ class DisasterDetailPage extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: CustomElevatedButton(
-              onPressed: () => context.go('/shelter'),
+              onPressed: () => context.push(
+                '/disaster-shelters',
+                extra: message.regionName.isEmpty ? null : message.regionName,
+              ),
               child: '가까운 대피소 보기',
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
     );

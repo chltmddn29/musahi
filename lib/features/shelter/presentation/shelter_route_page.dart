@@ -54,7 +54,7 @@ class _ShelterRoutePageState extends State<ShelterRoutePage> {
             children: [
               Positioned.fill(
                 child: ShelterMap(
-                  origin: origin,
+                  currentLocation: origin,
                   pins: [destination.location],
                   route: route.path,
                   padding: _mapPadding,

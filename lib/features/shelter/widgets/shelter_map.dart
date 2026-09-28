@@ -7,7 +7,8 @@ import 'package:musahi/features/shelter/widgets/map_markers.dart';
 
 /// OpenStreetMap 지도. 현재 위치·핀·경로가 모두 보이도록 카메라를 맞춘다.
 class ShelterMap extends StatelessWidget {
-  final Coordinate origin;
+  /// 없으면 현재 위치 마커를 그리지 않는다(재난 지역 밖에서 지역 대피소를 볼 때).
+  final Coordinate? currentLocation;
   final List<Coordinate> pins;
   final List<Coordinate> route;
 
@@ -16,7 +17,7 @@ class ShelterMap extends StatelessWidget {
 
   const ShelterMap({
     super.key,
-    required this.origin,
+    this.currentLocation,
     this.pins = const [],
     this.route = const [],
     this.padding = EdgeInsets.zero,
@@ -38,15 +39,14 @@ class ShelterMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final originLatLng = _toLatLng(origin);
-
     return FlutterMap(
       options: MapOptions(
         initialCameraFit: CameraFit.coordinates(
           coordinates: [
-            originLatLng,
-            ...[...pins, ...route].map(_toLatLng),
-          ],
+            ?currentLocation,
+            ...pins,
+            ...route,
+          ].map(_toLatLng).toList(),
           padding: padding + _markerMargin,
           maxZoom: 17,
         ),
@@ -77,12 +77,13 @@ class ShelterMap extends StatelessWidget {
                 alignment: _pinAlignment,
                 child: const ShelterPinMarker(),
               ),
-            Marker(
-              point: originLatLng,
-              width: CurrentLocationMarker.size,
-              height: CurrentLocationMarker.size,
-              child: const CurrentLocationMarker(),
-            ),
+            if (currentLocation case final location?)
+              Marker(
+                point: _toLatLng(location),
+                width: CurrentLocationMarker.size,
+                height: CurrentLocationMarker.size,
+                child: const CurrentLocationMarker(),
+              ),
           ],
         ),
         Padding(

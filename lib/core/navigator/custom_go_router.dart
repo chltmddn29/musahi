@@ -23,6 +23,13 @@ final GoRouter goRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/info',
   routes: [
+    // 재난문자 상세에서 여는 재난 지역 대피소. 탭 밖에 쌓아 뒤로가기로 상세에 돌아온다.
+    GoRoute(
+      path: '/disaster-shelters',
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state) =>
+          ShelterPage(disasterRegion: state.extra as String?),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return CustomBottomNavigatorBar(navigationShell: navigationShell);

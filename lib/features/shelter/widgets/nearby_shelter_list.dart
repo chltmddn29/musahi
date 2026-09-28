@@ -3,11 +3,16 @@ import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 
-/// "가까운 대피소 N곳" 헤더와 거리순 대피소 카드 목록.
+/// "[title] N곳" 헤더와 대피소 카드 목록.
 class NearbyShelterList extends StatelessWidget {
+  final String title;
   final List<Shelter> shelters;
 
-  const NearbyShelterList({super.key, required this.shelters});
+  const NearbyShelterList({
+    super.key,
+    required this.title,
+    required this.shelters,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +21,9 @@ class NearbyShelterList extends StatelessWidget {
       itemCount: shelters.length + 1,
       separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 16 : 12),
       itemBuilder: (_, index) {
-        if (index == 0) return _Header(count: shelters.length);
+        if (index == 0) {
+          return _Header(title: title, count: shelters.length);
+        }
         final shelter = shelters[index - 1];
         return InfoCard.shelter(
           key: ValueKey(shelter.id),
@@ -30,9 +37,10 @@ class NearbyShelterList extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
+  final String title;
   final int count;
 
-  const _Header({required this.count});
+  const _Header({required this.title, required this.count});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +52,7 @@ class _Header extends StatelessWidget {
           child: Semantics(
             header: true,
             child: Text(
-              '가까운 대피소',
+              title,
               style: AppTextStyles.cardTitle.copyWith(fontSize: 17),
             ),
           ),

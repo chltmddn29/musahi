@@ -6,6 +6,7 @@ import axios from "axios";
 import {Firestore} from "firebase-admin/firestore";
 import {safeErrorSummary} from "./errors";
 import {toNumber} from "./query";
+import {RegionFilter, isInRegions, parseRegions} from "./region_match";
 
 // 민방위 대피시설 API(공공데이터포털)는 위치 검색을 지원하지 않아 전국 데이터(약 2.3만 건)를
 // 주기적으로 받아 Firestore에 청크로 저장하고, 조회 시 메모리에서 거리순 정렬한다.
@@ -144,6 +145,51 @@ function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number):
     return 2 * 6371000 * Math.asin(Math.sqrt(a));
 }
 
+interface Point {
+    lat: number;
+    lng: number;
+}
+
+function nearestTo(rows: ShelterRow[], point: Point): ShelterRow[] {
+    const distanceOf = ([, , , lat, lng]: ShelterRow) => distanceMeters(point.lat, point.lng, lat, lng);
+    return [...rows].sort((a, b) => distanceOf(a) - distanceOf(b));
+}
+
+function centroidOf(rows: ShelterRow[]): Point {
+    const sum = rows.reduce((acc, [, , , lat, lng]) => ({lat: acc.lat + lat, lng: acc.lng + lng}), {lat: 0, lng: 0});
+    return {lat: sum.lat / rows.length, lng: sum.lng / rows.length};
+}
+
+/**
+ * 사용자가 재난 지역 안에 있거나 지역이 없으면 내 주변(nearby),
+ * 지역 밖에 있으면 그 지역 중심 주변의 지역 내 대피소(region)를 반환한다.
+ * 거리는 항상 사용자 위치 기준이다.
+ */
+function searchShelters(rows: ShelterRow[], user: Point, regions: RegionFilter[], limit: number) {
+    const toResponse = ([id, name, address, lat, lng]: ShelterRow) => ({
+        id, name, address, lat, lng,
+        distanceMeters: Math.round(distanceMeters(user.lat, user.lng, lat, lng)),
+    });
+
+    const nearby = nearestTo(rows, user);
+    // 내게 가장 가까운 대피소가 재난 지역 안이면 나도 그 지역에 있다고 본다.
+    const isUserInRegion = nearby.length > 0 && isInRegions(nearby[0][2], regions);
+    const regionRows = rows.filter(([, , address]) => isInRegions(address, regions));
+
+    if (regions.length === 0 || isUserInRegion || regionRows.length === 0) {
+        return {mode: "nearby", shelters: nearby.slice(0, limit).map(toResponse)};
+    }
+
+    // 지역 중심 주변 대피소를 고른 뒤, 표시되는 거리(사용자 기준) 순으로 정렬한다.
+    const center = centroidOf(regionRows);
+    const aroundCenter = nearestTo(regionRows, center).slice(0, limit);
+    return {
+        mode: "region",
+        center,
+        shelters: nearestTo(aroundCenter, user).map(toResponse),
+    };
+}
+
 export function createShelterFunctions(db: Firestore) {
     const syncShelters = onSchedule(
         {
@@ -184,15 +230,9 @@ export function createShelterFunctions(db: Firestore) {
             }
 
             try {
-                const shelters = (await loadShelterRows(db))
-                    .map(([id, name, address, sLat, sLng]) => ({
-                        id, name, address, lat: sLat, lng: sLng,
-                        distanceMeters: Math.round(distanceMeters(lat, lng, sLat, sLng)),
-                    }))
-                    .sort((a, b) => a.distanceMeters - b.distanceMeters)
-                    .slice(0, limit);
-
-                res.status(200).json({shelters});
+                const rows = await loadShelterRows(db);
+                const regions = parseRegions(req.query.regions);
+                res.status(200).json(searchShelters(rows, {lat, lng}, regions, limit));
             } catch (error) {
                 logger.error("대피소 조회 실패", safeErrorSummary(error));
                 res.status(500).json({error: "대피소 조회 실패"});
