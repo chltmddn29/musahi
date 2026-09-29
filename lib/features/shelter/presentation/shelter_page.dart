@@ -93,7 +93,7 @@ class _ShelterPageState extends State<ShelterPage> {
   }
 
   Widget _buildContent(NearbyShelters result) {
-    final (:origin, :shelters, :mode) = result;
+    final (:currentLocation, :shelters, :mode) = result;
     final isNearby = mode == ShelterSearchMode.nearby;
     final selected = _selectedOf(shelters);
 
@@ -105,7 +105,8 @@ class _ShelterPageState extends State<ShelterPage> {
           right: 0,
           height: _mapHeight,
           child: ShelterMap(
-            currentLocation: isNearby ? origin : null,
+            // 재난 지역 밖이면 내 위치까지 담으면 지도가 너무 넓어져 표시하지 않는다.
+            currentLocation: isNearby ? currentLocation : null,
             pins: [for (final shelter in shelters) shelter.location],
             selectedPin: selected == null ? null : shelters.indexOf(selected),
             onPinTap: (index) => _select(shelters[index]),
@@ -133,18 +134,29 @@ class _ShelterPageState extends State<ShelterPage> {
                     onSelect: _select,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                  child: isNearby
-                      ? RouteStartButton(
-                          onPressed: selected == null
-                              ? null
-                              : () => _startRoute(origin, selected),
-                        )
-                      : const CaptionText(
+                // 재난문자에서 열면 하단 탭이 없으므로 기기 하단 안전 영역을 비운다.
+                SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!isNearby) ...[
+                        const CaptionText(
                           '현재 위치가 재난 지역 밖이라 지역 안의 대피소를 보여줍니다.',
                           align: TextAlign.center,
                         ),
+                        const SizedBox(height: 8),
+                      ],
+                      RouteStartButton(
+                        key: ValueKey(selected?.id),
+                        distanceMeters: selected?.distanceMeters,
+                        onPressed: selected == null
+                            ? null
+                            : () => _startRoute(currentLocation, selected),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

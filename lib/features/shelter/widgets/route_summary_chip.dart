@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
+import 'package:musahi/core/utils/format_duration.dart';
 
 /// "도보 8분 · 550m 남음" 요약 칩.
 class RouteSummaryChip extends StatelessWidget {
@@ -30,7 +31,7 @@ class RouteSummaryChip extends StatelessWidget {
         ],
       ),
       child: Text(
-        '도보 ${(remainingTime.inSeconds / 60).ceil()}분 · ${formatDistance(remainingMeters)} 남음',
+        '도보 ${formatDuration(remainingTime)} · ${formatDistance(remainingMeters)} 남음',
         style: AppTextStyles.label.copyWith(
           color: AppColors.text,
           fontSize: 13.5,

@@ -6,9 +6,9 @@ import 'package:musahi/features/shelter/service/location_service.dart';
 /// [nearby]: 내 주변 대피소, [region]: 내가 재난 지역 밖일 때 그 지역 안의 대피소.
 enum ShelterSearchMode { nearby, region }
 
-/// [origin]은 [ShelterSearchMode.nearby]면 현재 위치, [ShelterSearchMode.region]이면 재난 지역 중심.
+/// [currentLocation]은 모드와 관계없이 사용자 현재 위치(경로 출발점)다.
 typedef NearbyShelters = ({
-  Coordinate origin,
+  Coordinate currentLocation,
   List<Shelter> shelters,
   ShelterSearchMode mode,
 });
@@ -41,21 +41,12 @@ class ShelterRepository {
         Shelter.fromJson(json as Map<String, dynamic>),
     ];
 
-    if (data['mode'] == ShelterSearchMode.region.name) {
-      final center = data['center'] as Map<String, dynamic>;
-      return (
-        origin: Coordinate(
-          (center['lat'] as num).toDouble(),
-          (center['lng'] as num).toDouble(),
-        ),
-        shelters: shelters,
-        mode: ShelterSearchMode.region,
-      );
-    }
     return (
-      origin: location,
+      currentLocation: location,
       shelters: shelters,
-      mode: ShelterSearchMode.nearby,
+      mode: data['mode'] == ShelterSearchMode.region.name
+          ? ShelterSearchMode.region
+          : ShelterSearchMode.nearby,
     );
   }
 }
