@@ -53,17 +53,19 @@ class DisasterDetailPage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: CustomElevatedButton(
-              onPressed: () => context.push(
-                '/disaster-shelters',
-                extra: message.regionName.isEmpty ? null : message.regionName,
+          if (message.needsShelter) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: CustomElevatedButton(
+                onPressed: () => context.push(
+                  '/disaster-shelters',
+                  extra: message.regionName.isEmpty ? null : message.regionName,
+                ),
+                child: '대피소 보기',
               ),
-              child: '대피소 보기',
             ),
-          ),
+          ],
           SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),

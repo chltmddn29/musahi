@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:musahi/core/utils/format_distance.dart';
+import 'package:musahi/core/utils/format_duration.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/disaster/model/disaster_area.dart';
+import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 import 'package:musahi/features/shelter/model/shelter_route.dart';
 import 'package:musahi/features/shelter/widgets/nearby_shelter_list.dart';
+import 'package:musahi/features/shelter/widgets/route_start_button.dart';
 
 Shelter _shelter(String id, {int distance = 100}) => Shelter(
   id: id,
@@ -24,6 +27,42 @@ void main() {
       expect(formatDistance(1000), '1.0km');
       expect(formatDistance(1240), '1.2km');
       expect(formatDistance(212367), '212.4km');
+    });
+  });
+
+  group('formatDuration', () {
+    test('1시간 미만은 분, 이상은 시간과 분 (초는 올림)', () {
+      expect(formatDuration(const Duration(seconds: 30)), '1분');
+      expect(formatDuration(const Duration(minutes: 45)), '45분');
+      expect(formatDuration(const Duration(minutes: 60)), '1시간');
+      expect(formatDuration(const Duration(minutes: 150)), '2시간 30분');
+      expect(formatDuration(const Duration(minutes: 5868)), '97시간 48분');
+    });
+  });
+
+  group('DisasterMessage.needsShelter', () {
+    DisasterMessage message(String? category, String text) =>
+        DisasterMessage.fromMap({'dstSeNm': category, 'msgCn': text});
+
+    test('대피가 필요한 재난 유형이면 대피소를 안내한다', () {
+      expect(message('지진', '규모 4.5 지진 발생').needsShelter, isTrue);
+      expect(message('화재', '공장 화재로 연기 발생').needsShelter, isTrue);
+      expect(message('호우', '하천 범람 우려').needsShelter, isTrue);
+    });
+
+    test('실종·교통·정전·폭염 등은 안내하지 않는다', () {
+      expect(message('기타', '실종된 주민 선종도 님을 찾습니다').needsShelter, isFalse);
+      expect(message('교통통제', '원효대교 전면 교통통제').needsShelter, isFalse);
+      expect(message('정전', '연동 일대 정전 발생').needsShelter, isFalse);
+      expect(message('폭염', '무더위쉼터를 이용하세요').needsShelter, isFalse);
+      expect(message(null, '불꽃놀이 소음 발생 예정').needsShelter, isFalse);
+    });
+
+    test('유형이 기타여도 본문에서 대피를 요청하면 안내한다', () {
+      expect(
+        message('기타', '화재 발생. 인근 주민께서는 안전한 곳으로 즉시 대피하시고').needsShelter,
+        isTrue,
+      );
     });
   });
 
@@ -198,6 +237,71 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(scrollOffset(), before);
+    });
+  });
+
+  group('RouteStartButton', () {
+    Future<void> pumpButton(
+      WidgetTester tester, {
+      required int distance,
+      required VoidCallback onPressed,
+      Key? key,
+    }) {
+      return tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RouteStartButton(
+              key: key,
+              distanceMeters: distance,
+              onPressed: onPressed,
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('도보 거리 이내면 한 번 눌러 바로 시작한다', (tester) async {
+      var started = 0;
+      await pumpButton(tester, distance: 4999, onPressed: () => started++);
+
+      await tester.tap(find.text('경로 안내 시작'));
+      expect(started, 1);
+    });
+
+    testWidgets('먼 거리면 첫 번째는 안내만, 두 번째에 시작한다', (tester) async {
+      var started = 0;
+      await pumpButton(tester, distance: 212367, onPressed: () => started++);
+
+      await tester.tap(find.text('경로 안내 시작'));
+      await tester.pump();
+      expect(started, 0);
+      expect(find.textContaining('도보로 가기엔 먼 거리입니다(212.4km)'), findsOneWidget);
+
+      await tester.tap(find.text('한 번 더 눌러 경로 안내 시작'));
+      expect(started, 1);
+    });
+
+    testWidgets('대피소(key)가 바뀌면 확인 상태를 초기화한다', (tester) async {
+      var started = 0;
+      await pumpButton(
+        tester,
+        key: const ValueKey('a'),
+        distance: 10000,
+        onPressed: () => started++,
+      );
+      await tester.tap(find.text('경로 안내 시작'));
+      await tester.pump();
+      expect(find.text('한 번 더 눌러 경로 안내 시작'), findsOneWidget);
+
+      await pumpButton(
+        tester,
+        key: const ValueKey('b'),
+        distance: 10000,
+        onPressed: () => started++,
+      );
+      expect(find.text('경로 안내 시작'), findsOneWidget);
+      await tester.tap(find.text('경로 안내 시작'));
+      expect(started, 0);
     });
   });
 }
