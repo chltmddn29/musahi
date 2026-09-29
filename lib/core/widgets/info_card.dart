@@ -56,6 +56,9 @@ class InfoCard extends StatelessWidget {
   /// 그림자 대신 얇은 테두리.
   final bool bordered;
 
+  /// 선택된 카드. 강조색 테두리를 그린다.
+  final bool selected;
+
   /// 겉면(그림자·라운드·padding 16)을 없애고 라벨 굵기를 낮춘 행 모드.
   /// [SettingsGroup] 안의 행이 쓴다.
   final bool flat;
@@ -70,6 +73,7 @@ class InfoCard extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.bordered = false,
+    this.selected = false,
     this.flat = false,
     this.crossAxisAlignment = CrossAxisAlignment.center,
   });
@@ -96,11 +100,13 @@ class InfoCard extends StatelessWidget {
     required String name,
     required String address,
     required int distanceMeters,
+    bool selected = false,
     VoidCallback? onTap,
   }) =>
       InfoCard(
         key: key,
         bordered: true,
+        selected: selected,
         leading: InfoCardLeading.icon(Icons.place_outlined),
         title: name,
         caption: address,
@@ -188,8 +194,11 @@ class InfoCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
-              border:
-                  bordered ? Border.all(color: const Color(0xFFEFEFEF)) : null,
+              border: selected
+                  ? Border.all(color: AppColors.primary, width: 1.5)
+                  : bordered
+                      ? Border.all(color: const Color(0xFFEFEFEF))
+                      : null,
               boxShadow: AppColors.cardShadow,
             ),
             child: content,

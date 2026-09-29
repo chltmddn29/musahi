@@ -6,7 +6,8 @@ import axios from "axios";
 import {Firestore} from "firebase-admin/firestore";
 import {safeErrorSummary} from "./errors";
 import {toNumber} from "./query";
-import {RegionFilter, isInRegions, parseRegions} from "./region_match";
+import {parseRegions} from "./region_match";
+import {ShelterRow, areaOf, searchShelters, toEncodedKey, toShelterRow} from "./shelter_logic";
 
 // 민방위 대피시설 API(공공데이터포털)는 위치 검색을 지원하지 않아 전국 데이터(약 2.3만 건)를
 // 주기적으로 받아 Firestore에 청크로 저장하고, 조회 시 메모리에서 거리순 정렬한다.
@@ -22,34 +23,6 @@ const INDEX_DOC = "system/shelterIndex";
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
-
-/** [id, 이름, 주소, 위도, 경도] — 문서 크기를 줄이기 위한 압축 형태 */
-type ShelterRow = [string, string, string, number, number];
-
-/**
- * 포털은 인코딩/디코딩 키를 함께 준다. axios에 맡기면 인코딩 키가 이중 인코딩되므로
- * 인코딩된 형태로 맞춰 URL에 직접 넣는다.
- */
-function toEncodedKey(apiKey: string): string {
-    const key = apiKey.trim();
-    return key.includes("%") ? key : encodeURIComponent(key);
-}
-
-function toShelterRow(item: any): ShelterRow | null {
-    const lat = Number(item.LAT_EPSG4326);
-    const lng = Number(item.LOT_EPST4326); // 명세상 필드명 오타(EPST) 그대로
-    const isInKorea = lat > 33 && lat < 39 && lng > 124 && lng < 132;
-    const isRemoved = Boolean(item.RMV_YMD?.trim());
-    if (!item.FCLT_NM || !isInKorea || isRemoved) return null;
-
-    return [
-        String(item.MNG_NO || `${lat},${lng}`),
-        String(item.FCLT_NM).trim(),
-        String(item.ROAD_NM_WHOL_ADDR || item.LCTN_WHOL_ADDR || "").trim(),
-        Number(lat.toFixed(6)),
-        Number(lng.toFixed(6)),
-    ];
-}
 
 async function fetchShelterPage(encodedKey: string, pageNo: number): Promise<any[]> {
     const response = await getWithRetry(`${SHELTER_API_URL}?serviceKey=${encodedKey}`, {
@@ -136,60 +109,6 @@ async function loadShelterRows(db: Firestore): Promise<ShelterRow[]> {
     return cachedRows;
 }
 
-function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-    return 2 * 6371000 * Math.asin(Math.sqrt(a));
-}
-
-interface Point {
-    lat: number;
-    lng: number;
-}
-
-function nearestTo(rows: ShelterRow[], point: Point): ShelterRow[] {
-    const distanceOf = ([, , , lat, lng]: ShelterRow) => distanceMeters(point.lat, point.lng, lat, lng);
-    return [...rows].sort((a, b) => distanceOf(a) - distanceOf(b));
-}
-
-function centroidOf(rows: ShelterRow[]): Point {
-    const sum = rows.reduce((acc, [, , , lat, lng]) => ({lat: acc.lat + lat, lng: acc.lng + lng}), {lat: 0, lng: 0});
-    return {lat: sum.lat / rows.length, lng: sum.lng / rows.length};
-}
-
-/**
- * 사용자가 재난 지역 안에 있거나 지역이 없으면 내 주변(nearby),
- * 지역 밖에 있으면 그 지역 중심 주변의 지역 내 대피소(region)를 반환한다.
- * 거리는 항상 사용자 위치 기준이다.
- */
-function searchShelters(rows: ShelterRow[], user: Point, regions: RegionFilter[], limit: number) {
-    const toResponse = ([id, name, address, lat, lng]: ShelterRow) => ({
-        id, name, address, lat, lng,
-        distanceMeters: Math.round(distanceMeters(user.lat, user.lng, lat, lng)),
-    });
-
-    const nearby = nearestTo(rows, user);
-    // 내게 가장 가까운 대피소가 재난 지역 안이면 나도 그 지역에 있다고 본다.
-    const isUserInRegion = nearby.length > 0 && isInRegions(nearby[0][2], regions);
-    const regionRows = rows.filter(([, , address]) => isInRegions(address, regions));
-
-    if (regions.length === 0 || isUserInRegion || regionRows.length === 0) {
-        return {mode: "nearby", shelters: nearby.slice(0, limit).map(toResponse)};
-    }
-
-    // 지역 중심 주변 대피소를 고른 뒤, 표시되는 거리(사용자 기준) 순으로 정렬한다.
-    const center = centroidOf(regionRows);
-    const aroundCenter = nearestTo(regionRows, center).slice(0, limit);
-    return {
-        mode: "region",
-        center,
-        shelters: nearestTo(aroundCenter, user).map(toResponse),
-    };
-}
-
 export function createShelterFunctions(db: Firestore) {
     const syncShelters = onSchedule(
         {
@@ -240,5 +159,22 @@ export function createShelterFunctions(db: Firestore) {
         }
     );
 
-    return {syncShelters, nearbyShelters};
+    // 재난문자 상세 지도용. 재난문자에는 좌표가 없어 지역 내 대피소 분포로 중심·범위를 추정한다.
+    const disasterAreas = onRequest(
+        {region: "asia-northeast3", memory: "512MiB"},
+        async (req, res) => {
+            try {
+                const rows = await loadShelterRows(db);
+                const areas = parseRegions(req.query.regions)
+                    .map((region) => areaOf(region, rows))
+                    .filter((area) => area !== null);
+                res.status(200).json({areas});
+            } catch (error) {
+                logger.error("재난 지역 조회 실패", safeErrorSummary(error));
+                res.status(500).json({error: "재난 지역 조회 실패"});
+            }
+        }
+    );
+
+    return {syncShelters, nearbyShelters, disasterAreas};
 }

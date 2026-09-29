@@ -3,6 +3,8 @@
 // 시도는 공통 키로 맞춘 뒤 비교한다.
 
 export interface RegionFilter {
+    /** 원래 지역명 ("부산광역시 해운대구") */
+    name: string;
     sido: string;
     /** 시군구 이하 경로. 빈 문자열이면 시도 전체. */
     rest: string;
@@ -22,7 +24,7 @@ function normalizeSido(token: string): string {
     return alias ? alias[1] : token.slice(0, 2);
 }
 
-function splitSido(text: string): RegionFilter {
+function splitSido(text: string): Omit<RegionFilter, "name"> {
     const [sido = "", ...rest] = text.trim().split(/\s+/);
     return {sido: normalizeSido(sido), rest: rest.join(" ")};
 }
@@ -33,10 +35,11 @@ export function parseRegions(value: unknown): RegionFilter[] {
     return value
         .slice(0, 1000)
         .split(",")
-        .filter((name) => name.trim() !== "")
+        .map((name) => name.trim())
+        .filter((name) => name !== "")
         .map((name) => {
             const {sido, rest} = splitSido(name);
-            return {sido, rest: rest.replace(/\s*전체$/, "")};
+            return {name, sido, rest: rest.replace(/\s*전체$/, "")};
         });
 }
 

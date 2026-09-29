@@ -27,6 +27,9 @@ class _ShelterPageState extends State<ShelterPage> {
 
   late Future<NearbyShelters> _nearby = _fetch();
 
+  /// 사용자가 고른 대피소 id. 없으면 가장 가까운 대피소를 선택한 것으로 본다.
+  String? _selectedId;
+
   Future<NearbyShelters> _fetch() => ShelterRepository.instance.fetchNearby(
     disasterRegion: widget.disasterRegion,
   );
@@ -34,12 +37,19 @@ class _ShelterPageState extends State<ShelterPage> {
   void _retry() {
     setState(() {
       _nearby = _fetch();
+      _selectedId = null;
     });
   }
 
   static String _errorMessage(Object? error) => error is LocationException
       ? error.message
       : '대피소 정보를 불러오지 못했습니다.\n네트워크 상태를 확인해 주세요.';
+
+  void _select(Shelter shelter) => setState(() => _selectedId = shelter.id);
+
+  Shelter? _selectedOf(List<Shelter> shelters) =>
+      shelters.where((s) => s.id == _selectedId).firstOrNull ??
+      shelters.firstOrNull;
 
   void _startRoute(Coordinate origin, Shelter shelter) {
     context.push(
@@ -85,6 +95,7 @@ class _ShelterPageState extends State<ShelterPage> {
   Widget _buildContent(NearbyShelters result) {
     final (:origin, :shelters, :mode) = result;
     final isNearby = mode == ShelterSearchMode.nearby;
+    final selected = _selectedOf(shelters);
 
     return Stack(
       children: [
@@ -96,6 +107,8 @@ class _ShelterPageState extends State<ShelterPage> {
           child: ShelterMap(
             currentLocation: isNearby ? origin : null,
             pins: [for (final shelter in shelters) shelter.location],
+            selectedPin: selected == null ? null : shelters.indexOf(selected),
+            onPinTap: (index) => _select(shelters[index]),
             // 상태바와 겹치는 시트 가장자리를 피해 카메라를 맞춘다.
             padding: EdgeInsets.only(
               top: MediaQuery.paddingOf(context).top,
@@ -116,15 +129,17 @@ class _ShelterPageState extends State<ShelterPage> {
                   child: NearbyShelterList(
                     title: isNearby ? '가까운 대피소' : '재난 지역 대피소',
                     shelters: shelters,
+                    selected: selected,
+                    onSelect: _select,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                   child: isNearby
                       ? RouteStartButton(
-                          onPressed: shelters.isEmpty
+                          onPressed: selected == null
                               ? null
-                              : () => _startRoute(origin, shelters.first),
+                              : () => _startRoute(origin, selected),
                         )
                       : const CaptionText(
                           '현재 위치가 재난 지역 밖이라 지역 안의 대피소를 보여줍니다.',

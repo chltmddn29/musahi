@@ -316,5 +316,5 @@ export const sgisRegions = onRequest(
         }
     }
 );
-export const {syncShelters, nearbyShelters} = createShelterFunctions(db);
+export const {syncShelters, nearbyShelters, disasterAreas} = createShelterFunctions(db);
 export {walkingRoute} from "./walking_route";
