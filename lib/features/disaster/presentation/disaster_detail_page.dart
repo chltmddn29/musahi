@@ -8,6 +8,7 @@ import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/disaster/widgets/disaster_area_map.dart';
+import 'package:musahi/features/guide/model/disaster_guide.dart';
 
 /// 재난문자 상세 페이지. [InfoPage]의 카드를 탭하면 전체 내용을 보여준다.
 class DisasterDetailPage extends StatelessWidget {
@@ -53,6 +54,19 @@ class DisasterDetailPage extends StatelessWidget {
               ),
             ),
           ),
+          if (DisasterGuide.of(message.category) != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: CustomElevatedButton(
+                onPressed: () => context.push('/guide-detail', extra: message),
+                backgroundColor: AppColors.surface,
+                foregroundColor: AppColors.primary,
+                borderColor: AppColors.primary.withValues(alpha: 0.4),
+                child: '행동요령 보기',
+              ),
+            ),
+          ],
           if (message.needsShelter) ...[
             const SizedBox(height: 12),
             SizedBox(
