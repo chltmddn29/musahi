@@ -1,13 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:musahi/core/constants/api.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 
 class RegionRepository {
-  static const _functionsBaseUrl =
-      'https://asia-northeast3-musahi-app.cloudfunctions.net';
-
-  final Dio _dio = Dio(BaseOptions(baseUrl: _functionsBaseUrl));
+  final Dio _dio = Dio(BaseOptions(baseUrl: functionsBaseUrl));
 
   /// SGIS 인증은 Firebase Functions에서만 수행한다.
   Future<List<RegionItem>> fetchRegions({String? cd}) async {

@@ -7,6 +7,7 @@ import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
+import 'package:musahi/features/disaster/widgets/disaster_area_map.dart';
 
 /// 재난문자 상세 페이지. [InfoPage]의 카드를 탭하면 전체 내용을 보여준다.
 class DisasterDetailPage extends StatelessWidget {
@@ -44,21 +45,28 @@ class DisasterDetailPage extends StatelessWidget {
                     thickness: 1,
                     color: AppColors.divider,
                   ),
-                  const SizedBox(height: 16),
-                  const _LocationPreview(),
+                  if (message.regionName.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    DisasterAreaMap(regionName: message.regionName),
+                  ],
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: CustomElevatedButton(
-              onPressed: () => context.go('/shelter'),
-              child: '가까운 대피소 보기',
+          if (message.needsShelter) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: CustomElevatedButton(
+                onPressed: () => context.push(
+                  '/disaster-shelters',
+                  extra: message.regionName.isEmpty ? null : message.regionName,
+                ),
+                child: '대피소 보기',
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+          ],
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
     );
@@ -85,29 +93,6 @@ class _SeverityTag extends StatelessWidget {
           color: AppColors.severityColor(severity),
           fontWeight: FontWeight.w700,
         ),
-      ),
-    );
-  }
-}
-
-/// 대피소 경로 화면 진입 전 위치 미리보기 자리표시자.
-class _LocationPreview extends StatelessWidget {
-  const _LocationPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 140,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Icon(
-        Icons.location_on_outlined,
-        size: 32,
-        color: AppColors.primary,
       ),
     );
   }

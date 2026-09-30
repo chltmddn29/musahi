@@ -15,12 +15,21 @@ import 'package:musahi/features/setting/presentation/setting_detail/text_size_pa
 import 'package:musahi/features/setting/presentation/setting_page.dart';
 import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/share_page.dart';
-import 'package:musahi/features/shelter/shelter_page.dart';
+import 'package:musahi/features/shelter/model/shelter_route.dart';
+import 'package:musahi/features/shelter/presentation/shelter_page.dart';
+import 'package:musahi/features/shelter/presentation/shelter_route_page.dart';
 
 final GoRouter goRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/info',
   routes: [
+    // 재난문자 상세에서 여는 재난 지역 대피소. 탭 밖에 쌓아 뒤로가기로 상세에 돌아온다.
+    GoRoute(
+      path: '/disaster-shelters',
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state) =>
+          ShelterPage(disasterRegion: state.extra as String?),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return CustomBottomNavigatorBar(navigationShell: navigationShell);
@@ -48,6 +57,15 @@ final GoRouter goRouter = GoRouter(
             GoRoute(
               path: '/shelter',
               builder: (context, state) => const ShelterPage(),
+              routes: [
+                GoRoute(
+                  path: 'route',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (context, state) => ShelterRoutePage(
+                    target: state.extra as RouteTarget,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
