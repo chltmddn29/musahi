@@ -36,6 +36,14 @@ final GoRouter goRouter = GoRouter(
     GoRoute(
       path: '/guide-detail',
       parentNavigatorKey: rootNavigatorKey,
+      // 딥링크·웹 새로고침처럼 extra 없이 들어오면 행동요령 탭으로 보낸다.
+      redirect: (context, state) {
+        final message = state.extra;
+        return message is DisasterMessage &&
+                DisasterGuide.of(message.category) != null
+            ? null
+            : '/guide';
+      },
       builder: (context, state) {
         final message = state.extra as DisasterMessage;
         return GuideDetailPage(
