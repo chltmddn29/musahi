@@ -9,7 +9,10 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import {createShelterFunctions} from "./shelters";
 import {safeErrorSummary} from "./errors";
-import {ensureSgisAccessToken, resetSgisAccessToken, sgisConsumerKey, sgisConsumerSecret} from "./sgis";
+import {
+    SGIS_API_URL, ensureSgisAccessToken, isSgisAuthError, resetSgisAccessToken,
+    sgisConsumerKey, sgisConsumerSecret,
+} from "./sgis";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -258,7 +261,7 @@ export const sgisRegions = onRequest(
             const accessToken = await ensureSgisAccessToken();
 
             const response = await axios.get(
-                "https://sgisapi.kostat.go.kr/OpenAPI3/addr/stage.json",
+                `${SGIS_API_URL}/addr/stage.json`,
                 {
                     params: { accessToken, ...(cd ? { cd } : {}) },
                     timeout: 15000,
@@ -267,6 +270,7 @@ export const sgisRegions = onRequest(
             const body = response.data;
 
             if (body.errCd !== 0) {
+                if (isSgisAuthError(body.errCd)) resetSgisAccessToken();
                 logger.warn("SGIS 지역 조회 실패", { errCd: body.errCd, errMsg: body.errMsg });
                 res.status(502).json({ error: body.errMsg ?? "지역 조회 실패" });
                 return;
@@ -274,8 +278,6 @@ export const sgisRegions = onRequest(
 
             res.status(200).json({ result: body.result });
         } catch (error) {
-            // 캐시된 토큰이 서버 쪽에서 만료됐을 수 있으니 다음 요청에 재발급하도록 초기화한다.
-            resetSgisAccessToken();
             logger.error("SGIS 지역 조회 중 오류", safeErrorSummary(error));
             res.status(502).json({ error: "지역 조회 실패" });
         }
