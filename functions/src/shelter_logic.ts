@@ -57,16 +57,25 @@ export function centroidOf(rows: ShelterRow[]): Point {
  * 사용자가 재난 지역 안에 있거나 지역이 없으면 내 주변(nearby),
  * 지역 밖에 있으면 그 지역 중심 주변의 지역 내 대피소(region)를 반환한다.
  * 거리는 항상 사용자 위치 기준이다.
+ *
+ * [userAddress]는 사용자 좌표의 행정구역 주소. 없으면(조회 실패 등) 가장 가까운
+ * 대피소의 주소로 대신 판단하는데, 이 경우 지역 경계 근처에서는 틀릴 수 있다.
  */
-export function searchShelters(rows: ShelterRow[], user: Point, regions: RegionFilter[], limit: number) {
+export function searchShelters(
+    rows: ShelterRow[],
+    user: Point,
+    regions: RegionFilter[],
+    limit: number,
+    userAddress?: string,
+) {
     const toResponse = ([id, name, address, lat, lng]: ShelterRow) => ({
         id, name, address, lat, lng,
         distanceMeters: Math.round(distanceMeters(user.lat, user.lng, lat, lng)),
     });
 
     const nearby = nearestTo(rows, user);
-    // 내게 가장 가까운 대피소가 재난 지역 안이면 나도 그 지역에 있다고 본다.
-    const isUserInRegion = nearby.length > 0 && isInRegions(nearby[0][2], regions);
+    const addressForRegion = userAddress ?? nearby[0]?.[2];
+    const isUserInRegion = addressForRegion !== undefined && isInRegions(addressForRegion, regions);
     const regionRows = rows.filter(([, , address]) => isInRegions(address, regions));
 
     if (regions.length === 0 || isUserInRegion || regionRows.length === 0) {
@@ -95,4 +104,19 @@ export function areaOf(region: RegionFilter, rows: ShelterRow[]) {
     const radiusMeters = distances[Math.floor((distances.length - 1) * 0.9)];
 
     return {name: region.name, center, radiusMeters: Math.round(radiusMeters)};
+}
+
+/** 청크 문서 id("{버전}-{번호}")에서 버전을 꺼낸다. 버전이 없는 옛 형식("0")은 0으로 본다. */
+function chunkVersion(chunkId: string): number {
+    const [version, index] = chunkId.split("-");
+    return index === undefined ? 0 : Number(version);
+}
+
+/**
+ * 지울 청크 id. [keepFromVersion]보다 오래된 버전만 고른다.
+ * 직전 버전을 keepFromVersion으로 넘기면, 전환 직전에 이전 인덱스를 읽은 조회가
+ * 청크를 다 읽기 전에 사라지지 않는다.
+ */
+export function staleChunkIds(chunkIds: string[], keepFromVersion: string): string[] {
+    return chunkIds.filter((id) => chunkVersion(id) < Number(keepFromVersion));
 }

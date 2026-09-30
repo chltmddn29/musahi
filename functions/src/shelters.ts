@@ -7,7 +7,10 @@ import {Firestore} from "firebase-admin/firestore";
 import {safeErrorSummary} from "./errors";
 import {toNumber} from "./query";
 import {parseRegions} from "./region_match";
-import {ShelterRow, areaOf, searchShelters, toEncodedKey, toShelterRow} from "./shelter_logic";
+import {
+    ShelterRow, areaOf, searchShelters, staleChunkIds, toEncodedKey, toShelterRow,
+} from "./shelter_logic";
+import {reverseGeocode, sgisConsumerKey, sgisConsumerSecret} from "./sgis";
 
 // 민방위 대피시설 API(공공데이터포털)는 위치 검색을 지원하지 않아 전국 데이터(약 2.3만 건)를
 // 주기적으로 받아 Firestore에 청크로 저장하고, 조회 시 메모리에서 거리순 정렬한다.
@@ -78,18 +81,21 @@ async function saveShelterChunks(db: Firestore, rows: ShelterRow[]): Promise<voi
         await collection.doc(`${version}-${i}`).set({rows: JSON.stringify(chunk)});
     }
     // 동기화가 겹쳐도 더 새로운 버전만 활성화한다.
+    // keepFromVersion: 전환 직전의 활성 버전. 그 버전을 읽는 중인 조회가 있을 수 있어 남긴다.
     const indexRef = db.doc(INDEX_DOC);
-    const activeVersion = await db.runTransaction(async (tx) => {
+    const keepFromVersion = await db.runTransaction(async (tx) => {
         const current = (await tx.get(indexRef)).data();
-        if (current && Number(current.version) > Number(version)) return String(current.version);
+        const currentVersion = current ? String(current.version) : version;
+        if (Number(currentVersion) > Number(version)) return currentVersion;
         tx.set(indexRef, {version, chunkCount});
-        return version;
+        return currentVersion;
     });
 
-    // 활성 버전보다 오래된 청크만 지워 동시에 저장 중인 새 버전은 건드리지 않는다.
-    const stale = (await collection.listDocuments())
-        .filter((doc) => Number(doc.id.split("-")[0]) < Number(activeVersion));
-    await Promise.all(stale.map((doc) => doc.delete()));
+    // 직전 버전보다 오래된 청크만 지운다. 직전 버전은 다음 동기화 때 정리된다.
+    const chunkIds = (await collection.listDocuments()).map((doc) => doc.id);
+    await Promise.all(
+        staleChunkIds(chunkIds, keepFromVersion).map((id) => collection.doc(id).delete())
+    );
 }
 
 let cachedRows: ShelterRow[] = [];
@@ -98,15 +104,32 @@ let cachedAt = 0;
 async function loadShelterRows(db: Firestore): Promise<ShelterRow[]> {
     if (cachedRows.length > 0 && Date.now() - cachedAt < CACHE_TTL_MS) return cachedRows;
 
-    const index = (await db.doc(INDEX_DOC).get()).data();
-    if (!index) return [];
+    // 읽는 사이 동기화가 버전을 바꿔 청크가 사라졌다면 새 인덱스로 한 번 더 읽는다.
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const index = (await db.doc(INDEX_DOC).get()).data();
+        if (!index) return [];
 
-    const refs = Array.from({length: index.chunkCount}, (_, i) =>
-        db.collection(CHUNK_COLLECTION).doc(`${index.version}-${i}`));
-    const chunks = await db.getAll(...refs);
-    cachedRows = chunks.flatMap((doc) => JSON.parse(doc.data()?.rows ?? "[]") as ShelterRow[]);
-    cachedAt = Date.now();
-    return cachedRows;
+        const refs = Array.from({length: index.chunkCount}, (_, i) =>
+            db.collection(CHUNK_COLLECTION).doc(`${index.version}-${i}`));
+        const chunks = await db.getAll(...refs);
+        if (chunks.every((doc) => doc.exists)) {
+            cachedRows = chunks.flatMap((doc) => JSON.parse(doc.data()?.rows) as ShelterRow[]);
+            cachedAt = Date.now();
+            return cachedRows;
+        }
+        logger.warn("대피소 청크 일부가 없어 인덱스를 다시 읽음", {version: index.version});
+    }
+    throw new Error("대피소 데이터를 온전히 읽지 못함");
+}
+
+/** 사용자 좌표의 행정구역 주소. 조회에 실패하면 undefined를 돌려 대체 판단을 쓰게 한다. */
+async function userAddressOf(lat: number, lng: number): Promise<string | undefined> {
+    try {
+        return await reverseGeocode(lat, lng);
+    } catch (error) {
+        logger.warn("사용자 행정구역 조회 실패, 가까운 대피소 주소로 대신 판단", safeErrorSummary(error));
+        return undefined;
+    }
 }
 
 export function createShelterFunctions(db: Firestore) {
@@ -136,7 +159,7 @@ export function createShelterFunctions(db: Firestore) {
     );
 
     const nearbyShelters = onRequest(
-        {region: "asia-northeast3", memory: "512MiB"},
+        {region: "asia-northeast3", memory: "512MiB", secrets: [sgisConsumerKey, sgisConsumerSecret]},
         async (req, res) => {
             const lat = toNumber(req.query.lat);
             const lng = toNumber(req.query.lng);
@@ -151,7 +174,11 @@ export function createShelterFunctions(db: Firestore) {
             try {
                 const rows = await loadShelterRows(db);
                 const regions = parseRegions(req.query.regions);
-                res.status(200).json(searchShelters(rows, {lat, lng}, regions, limit));
+                const userAddress = regions.length > 0 ? await userAddressOf(lat, lng) : undefined;
+                res.status(200).json({
+                    ...searchShelters(rows, {lat, lng}, regions, limit, userAddress),
+                    userAddress,
+                });
             } catch (error) {
                 logger.error("대피소 조회 실패", safeErrorSummary(error));
                 res.status(500).json({error: "대피소 조회 실패"});

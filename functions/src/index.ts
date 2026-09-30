@@ -9,6 +9,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import {createShelterFunctions} from "./shelters";
 import {safeErrorSummary} from "./errors";
+import {ensureSgisAccessToken, resetSgisAccessToken, sgisConsumerKey, sgisConsumerSecret} from "./sgis";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -17,8 +18,6 @@ const messaging = getMessaging();
 setGlobalOptions({ maxInstances: 10 });
 
 const disasterApiKey = defineSecret("DISASTER_API_KEY");
-const sgisConsumerKey = defineSecret("SGIS_CONSUMER_KEY");
-const sgisConsumerSecret = defineSecret("SGIS_CONSUMER_SECRET");
 
 function getTodayYYYYMMDD(): string {
     const now = new Date();
@@ -214,36 +213,6 @@ export const pollDisasterAlerts = onSchedule(
     }
 );
 
-// SGIS consumer_key/secret은 클라이언트에 절대 포함하지 않고, 이 함수 안에서만
-// 시크릿으로 보관한다. 앱은 이 함수만 호출해 SGIS 인증/조회를 대신 수행시킨다.
-let sgisAccessToken: string | null = null;
-let sgisAccessTokenExpiresAt: number | null = null;
-
-async function ensureSgisAccessToken(consumerKey: string, consumerSecret: string): Promise<string> {
-    const now = Date.now();
-    if (sgisAccessToken && sgisAccessTokenExpiresAt && now < sgisAccessTokenExpiresAt) {
-        return sgisAccessToken;
-    }
-
-    const response = await axios.get(
-        "https://sgisapi.kostat.go.kr/OpenAPI3/auth/authentication.json",
-        {
-            params: { consumer_key: consumerKey, consumer_secret: consumerSecret },
-            timeout: 15000,
-        }
-    );
-    const body = response.data;
-
-    if (body.errCd !== 0) {
-        throw new Error(`SGIS 인증 실패: ${body.errMsg}`);
-    }
-
-    sgisAccessToken = body.result.accessToken;
-    // SGIS 액세스 토큰 유효기간은 보통 4시간이나, 여유를 두고 3시간 후 만료로 처리한다.
-    sgisAccessTokenExpiresAt = now + 3 * 60 * 60 * 1000;
-    return sgisAccessToken as string;
-}
-
 // 인스턴스별 최소한의 rate limit이다. 분산 환경에서 완전한 보장은 아니지만,
 // 단일 호출자가 SGIS quota와 함수 비용을 소진시키는 것을 완화한다.
 const SGIS_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -286,10 +255,7 @@ export const sgisRegions = onRequest(
 
         try {
             const cd = typeof req.query.cd === "string" ? req.query.cd : undefined;
-            const accessToken = await ensureSgisAccessToken(
-                sgisConsumerKey.value(),
-                sgisConsumerSecret.value()
-            );
+            const accessToken = await ensureSgisAccessToken();
 
             const response = await axios.get(
                 "https://sgisapi.kostat.go.kr/OpenAPI3/addr/stage.json",
@@ -309,8 +275,7 @@ export const sgisRegions = onRequest(
             res.status(200).json({ result: body.result });
         } catch (error) {
             // 캐시된 토큰이 서버 쪽에서 만료됐을 수 있으니 다음 요청에 재발급하도록 초기화한다.
-            sgisAccessToken = null;
-            sgisAccessTokenExpiresAt = null;
+            resetSgisAccessToken();
             logger.error("SGIS 지역 조회 중 오류", safeErrorSummary(error));
             res.status(502).json({ error: "지역 조회 실패" });
         }

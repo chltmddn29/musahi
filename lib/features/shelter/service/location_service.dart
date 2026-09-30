@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 
@@ -21,8 +22,11 @@ class LocationService {
   /// 실내 등 GPS가 약할 때 로딩이 끝나지 않는 것을 막는다.
   static const _timeLimit = Duration(seconds: 10);
 
+  /// 이보다 오래된 마지막 위치는 다른 장소일 수 있어 쓰지 않는다.
+  static const _lastKnownMaxAge = Duration(minutes: 5);
+
   /// 권한을 확인·요청한 뒤 현재 위치를 반환한다.
-  /// 제한 시간 안에 못 받으면 마지막으로 알려진 위치를 쓴다.
+  /// 제한 시간 안에 못 받으면 최근([_lastKnownMaxAge] 이내)에 알려진 위치를 쓴다.
   Future<Coordinate> currentLocation() async {
     await _ensurePermission();
     final position = await _currentOrLastKnownPosition();
@@ -36,10 +40,17 @@ class LocationService {
       );
     } on TimeoutException {
       final lastKnown = await Geolocator.getLastKnownPosition();
-      if (lastKnown != null) return lastKnown;
+      if (lastKnown != null && isRecent(lastKnown.timestamp, DateTime.now())) {
+        return lastKnown;
+      }
       throw const LocationException('현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }
+
+  /// [recordedAt]이 [now] 기준으로 쓸 만큼 최근인지.
+  @visibleForTesting
+  static bool isRecent(DateTime recordedAt, DateTime now) =>
+      now.difference(recordedAt) <= _lastKnownMaxAge;
 
   Future<void> _ensurePermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) {

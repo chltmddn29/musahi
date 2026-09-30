@@ -1,7 +1,7 @@
 const {test} = require("node:test");
 const assert = require("node:assert/strict");
 const {
-    toEncodedKey, toShelterRow, distanceMeters, searchShelters, areaOf,
+    toEncodedKey, toShelterRow, distanceMeters, searchShelters, areaOf, staleChunkIds,
 } = require("../lib/shelter_logic");
 const {parseRegions} = require("../lib/region_match");
 
@@ -99,3 +99,27 @@ test("areaOf: 매칭되는 대피소가 없으면 null", () => {
     const [region] = parseRegions("없는도 없는시");
     assert.equal(areaOf(region, ROWS), null);
 });
+
+test("searchShelters: 사용자 행정구역 주소가 있으면 그것으로 지역 안팎을 판단한다", () => {
+    // 가장 가까운 대피소는 해운대구지만, 사용자는 경계 너머 수영구에 있는 경우
+    const regions = parseRegions("부산광역시 해운대구");
+    const outside = searchShelters(ROWS, USER_IN_HAEUNDAE, regions, 5, "부산광역시 수영구 광안1동");
+    assert.equal(outside.mode, "region");
+    const inside = searchShelters(ROWS, USER_IN_HAEUNDAE, regions, 5, "부산광역시 해운대구 중1동");
+    assert.equal(inside.mode, "nearby");
+});
+
+test("searchShelters: 주소 조회에 실패하면 가장 가까운 대피소 주소로 대신 판단한다", () => {
+    const result = searchShelters(ROWS, USER_IN_HAEUNDAE, parseRegions("부산광역시 해운대구"), 5, undefined);
+    assert.equal(result.mode, "nearby");
+});
+
+test("staleChunkIds: 직전 버전과 그 이후는 남기고 더 오래된 청크만 고른다", () => {
+    const ids = ["0", "1", "100-0", "100-1", "200-0", "300-0", "300-1"];
+    assert.deepEqual(staleChunkIds(ids, "200"), ["0", "1", "100-0", "100-1"]);
+});
+
+test("staleChunkIds: 첫 동기화(직전 버전 = 새 버전)면 옛 형식 청크만 지운다", () => {
+    assert.deepEqual(staleChunkIds(["0", "1", "500-0"], "500"), ["0", "1"]);
+});
+

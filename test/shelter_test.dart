@@ -7,6 +7,7 @@ import 'package:musahi/features/disaster/model/disaster_area.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 import 'package:musahi/features/shelter/model/shelter_route.dart';
+import 'package:musahi/features/shelter/service/location_service.dart';
 import 'package:musahi/features/shelter/widgets/nearby_shelter_list.dart';
 import 'package:musahi/features/shelter/widgets/route_start_button.dart';
 
@@ -62,6 +63,29 @@ void main() {
       expect(
         message('기타', '화재 발생. 인근 주민께서는 안전한 곳으로 즉시 대피하시고').needsShelter,
         isTrue,
+      );
+    });
+  });
+
+  group('LocationService.isRecent', () {
+    final now = DateTime(2026, 9, 30, 12);
+
+    test('5분 이내 위치만 쓴다', () {
+      expect(LocationService.isRecent(now, now), isTrue);
+      expect(
+        LocationService.isRecent(now.subtract(const Duration(minutes: 5)), now),
+        isTrue,
+      );
+      expect(
+        LocationService.isRecent(
+          now.subtract(const Duration(minutes: 5, seconds: 1)),
+          now,
+        ),
+        isFalse,
+      );
+      expect(
+        LocationService.isRecent(now.subtract(const Duration(days: 3)), now),
+        isFalse,
       );
     });
   });
