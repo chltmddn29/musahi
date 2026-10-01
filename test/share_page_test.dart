@@ -149,8 +149,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ShareCompletePage), findsOneWidget);
-    expect(find.text('전송 완료'), findsOneWidget);
+    expect(find.text('미리보기 완료'), findsOneWidget);
+    expect(find.text('전송 완료'), findsNothing);
+    expect(find.byIcon(Icons.check_circle_outline), findsNothing);
     expect(find.textContaining('실제 메시지는 전송되지 않았습니다.'), findsOneWidget);
+    expect(find.textContaining('미리보기 대상'), findsOneWidget);
     expect(find.textContaining('김민수, 이영희'), findsOneWidget);
     expect(find.textContaining('오늘 '), findsOneWidget);
     expect(find.text('하단 탭'), findsNothing);
