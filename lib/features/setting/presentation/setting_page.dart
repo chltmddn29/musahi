@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/notifications/notification_sync_status.dart';
 import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
+import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
@@ -31,22 +31,28 @@ class SettingPage extends StatelessWidget {
               disasterAlertEnabled,
               safetyGuideAlertEnabled,
             ]),
-            builder: (context, _) => _buildGroup([
-              SettingMenuItem(
-                icon: Icons.notifications,
-                title: '재난문자 알림',
-                isSwitch: true,
-                switchValue: disasterAlertEnabled.value,
-                onSwitchChanged: setDisasterAlertEnabled,
-              ),
-              SettingMenuItem(
-                icon: Icons.check_circle_outline,
-                title: '안전 안내 알림',
-                isSwitch: true,
-                switchValue: safetyGuideAlertEnabled.value,
-                onSwitchChanged: setSafetyGuideAlertEnabled,
-              ),
-            ]),
+            builder: (context, _) => SettingsGroup(
+              children: [
+                SettingMenuTile(
+                  menuItem: SettingMenuItem(
+                    icon: Icons.notifications,
+                    title: '재난문자 알림',
+                    isSwitch: true,
+                    switchValue: disasterAlertEnabled.value,
+                    onSwitchChanged: setDisasterAlertEnabled,
+                  ),
+                ),
+                SettingMenuTile(
+                  menuItem: SettingMenuItem(
+                    icon: Icons.check_circle_outline,
+                    title: '안전 안내 알림',
+                    isSwitch: true,
+                    switchValue: safetyGuideAlertEnabled.value,
+                    onSwitchChanged: setSafetyGuideAlertEnabled,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 40),
           ListenableBuilder(
@@ -57,15 +63,15 @@ class SettingPage extends StatelessWidget {
               InterestRegionStore.instance.primaryCd,
               SafetyContactStore.instance.contacts,
             ]),
-            builder: (context, _) => _buildGroup(
-              _navItems(
+            builder: (context, _) => SettingsGroup(
+              children: _navItems(
                 context,
                 textSizeStepValue: textSizeStep.value,
                 language: currentLanguage.value,
                 regions: InterestRegionStore.instance.regions.value,
                 primaryCd: InterestRegionStore.instance.primaryCd.value,
                 contacts: SafetyContactStore.instance.contacts.value,
-              ),
+              ).map((item) => SettingMenuTile(menuItem: item)).toList(),
             ),
           ),
         ],
@@ -124,26 +130,4 @@ class SettingPage extends StatelessWidget {
   String _contactSubtitle(List<SafetyContact> contacts) {
     return contacts.isEmpty ? '설정 필요' : '${contacts.length}명';
   }
-}
-
-Widget _buildGroup(List<SettingMenuItem> items) {
-  return Container(
-    // InkWell 리플이 둥근 모서리를 넘지 않도록 잘라낸다.
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: AppColors.cardShadow,
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (int i = 0; i < items.length; i++) ...[
-          SettingMenuTile(menuItem: items[i]),
-          if (i != items.length - 1)
-            const Divider(height: 1, thickness: 1, color: AppColors.divider),
-        ],
-      ],
-    ),
-  );
 }

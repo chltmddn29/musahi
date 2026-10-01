@@ -158,22 +158,14 @@ class NotificationService {
           ),
         ),
       );
-    } else if (severity == '긴급') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.orange.shade800,
-          duration: const Duration(seconds: 8),
-          content: Text(
-            '$title\n$body',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      );
     } else {
+      final isEmergency = severity == '긴급';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.blueGrey,
-          duration: const Duration(seconds: 5),
+          backgroundColor: isEmergency
+              ? Colors.orange.shade800
+              : Colors.blueGrey,
+          duration: Duration(seconds: isEmergency ? 8 : 5),
           content: Text(
             '$title\n$body',
             style: const TextStyle(color: Colors.white),
