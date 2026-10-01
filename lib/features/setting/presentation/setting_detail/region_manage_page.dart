@@ -34,6 +34,9 @@ class _RegionManagePageState extends State<RegionManagePage> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  /// 가장 최근 [_loadRegions] 호출 번호. 이전 단계의 늦은 응답을 버리는 데 쓴다.
+  int _loadRequestId = 0;
+
   /// true면 지역 검색/선택 화면, false면 등록된 관심지역 목록 화면.
   bool _isAdding = false;
 
@@ -58,6 +61,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
   }
 
   Future<void> _loadRegions({String? cd}) async {
+    final requestId = ++_loadRequestId;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -67,20 +71,20 @@ class _RegionManagePageState extends State<RegionManagePage> {
         _regionRepository.fetchRegions(cd: cd),
         if (cd == null) _regionRepository.fetchNotificationRegions(),
       ]);
-      if (!mounted || !_isAdding) return;
+      if (!mounted || !_isAdding || requestId != _loadRequestId) return;
       setState(() {
         _regions = results.first;
         if (cd == null) _notificationRegions = results[1];
         _isLoading = false;
       });
     } catch (error) {
-      _showLoadError(error);
+      _showLoadError(error, requestId);
     }
   }
 
-  void _showLoadError(Object error) {
+  void _showLoadError(Object error, int requestId) {
     debugPrint('지역 조회 에러: $error');
-    if (!mounted || !_isAdding) return;
+    if (!mounted || !_isAdding || requestId != _loadRequestId) return;
     setState(() {
       _errorMessage = '지역 정보를 불러오지 못했습니다';
       _isLoading = false;
