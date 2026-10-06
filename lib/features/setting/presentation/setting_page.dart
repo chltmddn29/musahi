@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/notifications/notification_sync_status.dart';
-import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/notification_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
@@ -58,7 +57,6 @@ class SettingPage extends StatelessWidget {
           ListenableBuilder(
             listenable: Listenable.merge([
               textSizeStep,
-              currentLanguage,
               InterestRegionStore.instance.regions,
               InterestRegionStore.instance.primaryCd,
               SafetyContactStore.instance.contacts,
@@ -67,7 +65,6 @@ class SettingPage extends StatelessWidget {
               children: _navItems(
                 context,
                 textSizeStepValue: textSizeStep.value,
-                language: currentLanguage.value,
                 regions: InterestRegionStore.instance.regions.value,
                 primaryCd: InterestRegionStore.instance.primaryCd.value,
                 contacts: SafetyContactStore.instance.contacts.value,
@@ -82,7 +79,6 @@ class SettingPage extends StatelessWidget {
   List<SettingMenuItem> _navItems(
     BuildContext context, {
     required int textSizeStepValue,
-    required AppLanguage language,
     required List<RegionItem> regions,
     required String? primaryCd,
     required List<SafetyContact> contacts,
@@ -91,7 +87,7 @@ class SettingPage extends StatelessWidget {
       SettingMenuItem(
         icon: Icons.language,
         title: '언어 설정',
-        subTitle: language.label,
+        subTitle: '한국어',
         onPressed: () => context.push('/setting/language'),
       ),
       SettingMenuItem(

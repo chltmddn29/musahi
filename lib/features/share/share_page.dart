@@ -9,6 +9,8 @@ import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/widgets/share_message_editor.dart';
+import 'package:musahi/features/share/widgets/share_contact_section.dart';
+import 'package:musahi/features/share/widgets/share_message_section.dart';
 
 class SharePage extends StatefulWidget {
   const SharePage({super.key});
@@ -64,9 +66,12 @@ class _SharePageState extends State<SharePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _ContactSection(contacts: contacts),
+                    ShareContactSection(contacts: contacts),
                     const SizedBox(height: 24),
-                    _MessageSection(message: _message, onEdit: _editMessage),
+                    ShareMessageSection(
+                      message: _message,
+                      onEdit: _editMessage,
+                    ),
                   ],
                 ),
               ),
@@ -119,100 +124,6 @@ class _SharePageState extends State<SharePage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ContactSection extends StatelessWidget {
-  final List<SafetyContact> contacts;
-
-  const _ContactSection({required this.contacts});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _SectionTitle('등록된 안전 연락처'),
-        const SizedBox(height: 10),
-        if (contacts.isEmpty)
-          InfoCard(
-            title: '등록된 안전 연락처가 없습니다',
-            caption: '연락처를 추가해 안전 상태를 공유할 준비를 해 주세요.',
-            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-            onTap: () => context.push('/setting/contacts/add'),
-          )
-        else
-          for (var index = 0; index < contacts.length; index++) ...[
-            if (index > 0) const SizedBox(height: 10),
-            InfoCard(
-              key: ValueKey(contacts[index].id),
-              leading: InfoCardLeading.initial(contacts[index].name),
-              title: contacts[index].name,
-              caption: contacts[index].relation,
-            ),
-          ],
-      ],
-    );
-  }
-}
-
-class _MessageSection extends StatelessWidget {
-  final String message;
-  final VoidCallback onEdit;
-
-  const _MessageSection({required this.message, required this.onEdit});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            const Expanded(child: _SectionTitle('자동 생성 메시지')),
-            IconButton(
-              onPressed: onEdit,
-              tooltip: '메시지 수정',
-              icon: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.muted,
-                size: 18,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.primary),
-            color: AppColors.messageSurface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            message,
-            style: AppTextStyles.bodyMedium.copyWith(height: 1.6),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      header: true,
-      child: Text(
-        text,
-        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }

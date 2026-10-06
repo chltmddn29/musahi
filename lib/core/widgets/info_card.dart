@@ -2,47 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
+import 'package:musahi/core/widgets/caption_text.dart';
+import 'package:musahi/core/widgets/info_card_leading.dart';
 
-/// 캡션 크기. [small] 12.5sp(리스트 보조텍스트), [medium] 14sp(온보딩 설명문).
-enum CaptionSize { small, medium }
-
-/// 제목 아래 회색 보조 텍스트.
-class CaptionText extends StatelessWidget {
-  final String text;
-  final CaptionSize size;
-  final TextAlign align;
-  final int? maxLines;
-
-  /// 컬러 배경 위에 올릴 때 true → 흰색.
-  final bool onColor;
-
-  const CaptionText(
-    this.text, {
-    super.key,
-    this.size = CaptionSize.small,
-    this.align = TextAlign.start,
-    this.maxLines,
-    this.onColor = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final base = switch (size) {
-      CaptionSize.small => AppTextStyles.captionSmall,
-      CaptionSize.medium => AppTextStyles.captionMedium,
-    };
-
-    return Text(
-      text,
-      textAlign: align,
-      maxLines: maxLines,
-      overflow: maxLines == null ? null : TextOverflow.ellipsis,
-      style: onColor
-          ? base.copyWith(color: AppColors.surface.withValues(alpha: 0.9))
-          : base,
-    );
-  }
-}
+export 'caption_text.dart';
+export 'info_card_leading.dart';
+export 'settings_group.dart';
 
 /// `[leading] + (제목 + 캡션) + [trailing]` 카드/행 틀.
 /// 도메인 변형은 팩토리 생성자([InfoCard.alert] 등)로 만든다.
@@ -85,14 +50,13 @@ class InfoCard extends StatelessWidget {
     required String severity,
     required String time,
     VoidCallback? onTap,
-  }) =>
-      InfoCard(
-        key: key,
-        title: title,
-        caption: time,
-        onTap: onTap,
-        trailing: _SeverityBadge(severity),
-      );
+  }) => InfoCard(
+    key: key,
+    title: title,
+    caption: time,
+    onTap: onTap,
+    trailing: _SeverityBadge(severity),
+  );
 
   /// 대피소 행.
   factory InfoCard.shelter({
@@ -102,20 +66,19 @@ class InfoCard extends StatelessWidget {
     required int distanceMeters,
     bool selected = false,
     VoidCallback? onTap,
-  }) =>
-      InfoCard(
-        key: key,
-        bordered: true,
-        selected: selected,
-        leading: InfoCardLeading.icon(Icons.place_outlined),
-        title: name,
-        caption: address,
-        onTap: onTap,
-        trailing: Text(
-          formatDistance(distanceMeters),
-          style: AppTextStyles.label.copyWith(color: AppColors.primary),
-        ),
-      );
+  }) => InfoCard(
+    key: key,
+    bordered: true,
+    selected: selected,
+    leading: InfoCardLeading.icon(Icons.place_outlined),
+    title: name,
+    caption: address,
+    onTap: onTap,
+    trailing: Text(
+      formatDistance(distanceMeters),
+      style: AppTextStyles.label.copyWith(color: AppColors.primary),
+    ),
+  );
 
   /// [SettingsGroup] 안의 한 행.
   factory InfoCard.settingsTile({
@@ -173,8 +136,9 @@ class InfoCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style:
-                  flat ? AppTextStyles.bodyMedium : AppTextStyles.cardTitle,
+                  style: flat
+                      ? AppTextStyles.bodyMedium
+                      : AppTextStyles.cardTitle,
                 ),
                 if (caption != null) ...[
                   const SizedBox(height: 4),
@@ -197,8 +161,8 @@ class InfoCard extends StatelessWidget {
               border: selected
                   ? Border.all(color: AppColors.primary, width: 1.5)
                   : bordered
-                      ? Border.all(color: const Color(0xFFEFEFEF))
-                      : null,
+                  ? Border.all(color: const Color(0xFFEFEFEF))
+                  : null,
               boxShadow: AppColors.cardShadow,
             ),
             child: content,
@@ -229,100 +193,6 @@ class _SeverityBadge extends StatelessWidget {
       child: Text(
         rating,
         style: AppTextStyles.label.copyWith(color: AppColors.surface),
-      ),
-    );
-  }
-}
-
-/// [InfoCard.leading] 슬롯용 아이콘·뱃지 3종.
-class InfoCardLeading extends StatelessWidget {
-  final Widget child;
-  final double size;
-  final Color background;
-  final BorderRadius radius;
-
-  const InfoCardLeading._({
-    required this.child,
-    required this.size,
-    required this.background,
-    required this.radius,
-  });
-
-  /// 번호 뱃지 (행동요령).
-  factory InfoCardLeading.number(int value) => InfoCardLeading._(
-        size: 28,
-        background: AppColors.primary,
-        radius: BorderRadius.circular(14),
-        child: Text(
-          '$value',
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.surface,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-
-  /// 아이콘 박스. 기본 36, 설정 행은 [boxSize] 32.
-  factory InfoCardLeading.icon(IconData icon, {double boxSize = 36}) =>
-      InfoCardLeading._(
-        size: boxSize,
-        background: AppColors.primary.withValues(alpha: 0.1),
-        radius: BorderRadius.circular(boxSize >= 36 ? 10 : 9),
-        child: Icon(icon, size: boxSize / 2, color: AppColors.primary),
-      );
-
-  /// 이니셜 아바타 (연락처).
-  factory InfoCardLeading.initial(String text) => InfoCardLeading._(
-        size: 34,
-        background: AppColors.primary.withValues(alpha: 0.12),
-        radius: BorderRadius.circular(17),
-        child: Text(
-          text.isEmpty ? '' : text.characters.first,
-          style: AppTextStyles.label.copyWith(
-            color: AppColors.primary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: background, borderRadius: radius),
-      child: child,
-    );
-  }
-}
-
-/// 흰색 라운드 카드 안에 행을 담고 사이에 1px 구분선을 넣는 컨테이너.
-class SettingsGroup extends StatelessWidget {
-  final List<Widget> children;
-
-  const SettingsGroup({super.key, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppColors.cardShadow,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, thickness: 1, color: AppColors.divider),
-            children[i],
-          ],
-        ],
       ),
     );
   }
