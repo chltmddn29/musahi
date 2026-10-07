@@ -3,27 +3,36 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 
 class CustomElevatedButton extends StatelessWidget {
-  final void Function() onPressed;
+  final void Function()? onPressed;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final Color? borderColor;
+  final String child;
 
   const CustomElevatedButton({
     super.key,
     required this.onPressed,
     this.backgroundColor,
     this.foregroundColor,
+    this.borderColor,
+    required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: borderColor != null
+              ? BorderSide(color: borderColor!)
+              : BorderSide.none,
+        ),
         backgroundColor: backgroundColor ?? AppColors.primary,
       ),
       onPressed: onPressed,
       child: Text(
-        '확인',
+        child,
         style: AppTextStyles.bodyLarge.copyWith(
           color: foregroundColor ?? AppColors.surface,
         ),

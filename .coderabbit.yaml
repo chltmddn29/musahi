@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ko-KR
+
+reviews:
+  profile: chill
+  auto_review:
+    # 기본 브랜치(main) 외에 자동 리뷰할 대상 브랜치 (정규식)
+    base_branches:
+      - develop

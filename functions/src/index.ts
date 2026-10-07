@@ -1,11 +1,18 @@
 import {setGlobalOptions} from "firebase-functions";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
+import {createShelterFunctions} from "./shelters";
+import {safeErrorSummary} from "./errors";
+import {
+    SGIS_API_URL, ensureSgisAccessToken, isSgisAuthError, resetSgisAccessToken,
+    sgisConsumerKey, sgisConsumerSecret,
+} from "./sgis";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -60,7 +67,7 @@ async function fetchDisasterMessagesPage(
         } catch (error) {
             lastError = error;
             if (attempt === retries) throw error;
-            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { error, page });
+            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { ...safeErrorSummary(error), page });
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
     }
@@ -204,7 +211,77 @@ export const pollDisasterAlerts = onSchedule(
             await db.collection("system").doc("lastProcessed").set({ sn: maxSn });
 
         } catch (error) {
-            logger.error("재난문자 API 호출 실패", { error });
+            logger.error("재난문자 API 호출 실패", safeErrorSummary(error));
         }
     }
 );
+
+// 인스턴스별 최소한의 rate limit이다. 분산 환경에서 완전한 보장은 아니지만,
+// 단일 호출자가 SGIS quota와 함수 비용을 소진시키는 것을 완화한다.
+const SGIS_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const SGIS_RATE_LIMIT_MAX_REQUESTS = 30;
+const sgisRequestTimestamps = new Map<string, number[]>();
+
+function isSgisRateLimited(clientId: string): boolean {
+    const now = Date.now();
+    const windowStart = now - SGIS_RATE_LIMIT_WINDOW_MS;
+    const timestamps = (sgisRequestTimestamps.get(clientId) ?? []).filter(
+        (ts) => ts > windowStart
+    );
+    if (timestamps.length >= SGIS_RATE_LIMIT_MAX_REQUESTS) {
+        sgisRequestTimestamps.set(clientId, timestamps);
+        return true;
+    }
+    timestamps.push(now);
+    sgisRequestTimestamps.set(clientId, timestamps);
+    return false;
+}
+
+export const sgisRegions = onRequest(
+    {
+        region: "asia-northeast3",
+        secrets: [sgisConsumerKey, sgisConsumerSecret],
+    },
+    async (req, res) => {
+        res.set("Access-Control-Allow-Origin", "*");
+        if (req.method === "OPTIONS") {
+            res.set("Access-Control-Allow-Methods", "GET");
+            res.set("Access-Control-Allow-Headers", "Content-Type");
+            res.status(204).send("");
+            return;
+        }
+
+        if (isSgisRateLimited(req.ip ?? "unknown")) {
+            res.status(429).json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." });
+            return;
+        }
+
+        try {
+            const cd = typeof req.query.cd === "string" ? req.query.cd : undefined;
+            const accessToken = await ensureSgisAccessToken();
+
+            const response = await axios.get(
+                `${SGIS_API_URL}/addr/stage.json`,
+                {
+                    params: { accessToken, ...(cd ? { cd } : {}) },
+                    timeout: 15000,
+                }
+            );
+            const body = response.data;
+
+            if (body.errCd !== 0) {
+                if (isSgisAuthError(body.errCd)) resetSgisAccessToken();
+                logger.warn("SGIS 지역 조회 실패", { errCd: body.errCd, errMsg: body.errMsg });
+                res.status(502).json({ error: body.errMsg ?? "지역 조회 실패" });
+                return;
+            }
+
+            res.status(200).json({ result: body.result });
+        } catch (error) {
+            logger.error("SGIS 지역 조회 중 오류", safeErrorSummary(error));
+            res.status(502).json({ error: "지역 조회 실패" });
+        }
+    }
+);
+export const {syncShelters, nearbyShelters, disasterAreas} = createShelterFunctions(db);
+export {walkingRoute} from "./walking_route";
