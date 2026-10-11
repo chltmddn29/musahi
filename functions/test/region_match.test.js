@@ -40,3 +40,14 @@ test("parseRegions는 빈 값과 공백을 걸러내고 원래 이름을 보존�
         ["부산광역시 해운대구", "서울특별시 전체"],
     );
 });
+
+test("통합특별시 표기에서도 광주와 전남을 구분한다", () => {
+    const gwangju = "전남광주통합특별시 북구 하서로 1";
+    const yeosu = "전남광주통합특별시 여수시 시청로 1";
+    assert.equal(inRegion("광주광역시 전체", gwangju), true);
+    assert.equal(inRegion("광주광역시 전체", yeosu), false);
+    assert.equal(inRegion("전라남도 전체", yeosu), true);
+    assert.equal(inRegion("전라남도 전체", gwangju), false);
+    assert.equal(inRegion("전남광주통합특별시 전체", yeosu), true);
+    assert.equal(inRegion("전남광주통합특별시 전체", gwangju), true);
+});

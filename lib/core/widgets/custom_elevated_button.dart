@@ -34,7 +34,9 @@ class CustomElevatedButton extends StatelessWidget {
       child: Text(
         child,
         style: AppTextStyles.bodyLarge.copyWith(
-          color: foregroundColor ?? AppColors.surface,
+          color: onPressed == null
+              ? AppColors.muted
+              : foregroundColor ?? AppColors.surface,
         ),
       ),
     );

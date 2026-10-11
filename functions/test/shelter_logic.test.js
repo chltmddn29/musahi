@@ -123,3 +123,16 @@ test("staleChunkIds: 첫 동기화(직전 버전 = 새 버전)면 옛 형식 청
     assert.deepEqual(staleChunkIds(["0", "1", "500-0"], "500"), ["0", "1"]);
 });
 
+
+test("searchShelters: 재난 지역이 여럿이면 사용자와 가까운 지역의 대피소만 고른다", () => {
+    const daegu = {lat: 35.8714, lng: 128.6014};
+    const regions = parseRegions("서울특별시 전체,부산광역시 해운대구");
+    const result = searchShelters(ROWS, daegu, regions, 10, "대구광역시 중구 공평로 88");
+    assert.equal(result.mode, "region");
+    assert.deepEqual(result.shelters.map((s) => s.id).sort(), ["h1", "h2"]);
+});
+
+test("areaOf: 대피소가 한 곳뿐인 지역도 최소 반경을 갖는다", () => {
+    const [region] = parseRegions("서울특별시 중구");
+    assert.equal(areaOf(region, [SEOUL_1]).radiusMeters, 500);
+});

@@ -31,11 +31,15 @@ class ShelterRoute {
   final Duration remainingTime;
   final RouteStep nextStep;
 
+  /// 경로 API 없이 직선 거리로 추정한 값이면 true.
+  final bool isEstimated;
+
   const ShelterRoute({
     required this.path,
     required this.remainingMeters,
     required this.remainingTime,
     required this.nextStep,
+    this.isEstimated = false,
   });
 
   factory ShelterRoute.fromJson(Map<String, dynamic> json) {

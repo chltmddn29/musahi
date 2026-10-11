@@ -16,7 +16,12 @@ void main() {
     expect(store.contacts.value, isEmpty);
 
     store.add(
-      SafetyContact(id: '1', name: 'Kim Minsu', phone: '010-1234-5678', relation: '가족'),
+      SafetyContact(
+        id: '1',
+        name: 'Kim Minsu',
+        phone: '010-1234-5678',
+        relation: '가족',
+      ),
     );
     await pumpEventQueue();
 
@@ -49,6 +54,14 @@ void main() {
     store.contacts.value = [];
     await store.load();
 
+    expect(store.contacts.value, isEmpty);
+  });
+
+  test('손상된 저장값은 버리고 빈 목록으로 시작한다', () async {
+    SharedPreferences.setMockInitialValues({'safety_contacts': '{not json'});
+    final store = SafetyContactStore.instance;
+    store.contacts.value = [];
+    await expectLater(store.load(), completes);
     expect(store.contacts.value, isEmpty);
   });
 }

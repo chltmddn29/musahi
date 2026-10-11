@@ -26,10 +26,15 @@ class InterestRegionStore {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_regionsKey);
     if (raw != null) {
-      final decoded = jsonDecode(raw) as List<dynamic>;
-      regions.value = decoded
-          .map((e) => RegionItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+      try {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        regions.value = decoded
+            .map((e) => RegionItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } on Object {
+        // 손상된 저장값 때문에 앱이 시작되지 못하면 앱 데이터를 지우기 전까지 복구할 수 없다.
+        regions.value = [];
+      }
     }
     primaryCd.value = prefs.getString(_primaryCdKey);
   }
@@ -72,18 +77,22 @@ class InterestRegionStore {
 
     var changed = false;
     String? migratedPrimaryCd;
-    final migrated = regions.value.map((region) {
-      if (region.notificationCode != null) return region;
-      final matches = matchesByName[_normalizeAddress(region.displayName)];
-      if (matches == null || matches.length != 1) return region;
+    final seenCds = <String>{};
+    final migrated = regions.value
+        .map((region) {
+          if (region.notificationCode != null) return region;
+          final matches = matchesByName[_normalizeAddress(region.displayName)];
+          if (matches == null || matches.length != 1) return region;
 
-      final replacement = matches.single;
-      if (primaryCd.value == region.cd) {
-        migratedPrimaryCd = replacement.cd;
-      }
-      changed = true;
-      return replacement;
-    }).toList();
+          final replacement = matches.single;
+          if (primaryCd.value == region.cd) {
+            migratedPrimaryCd = replacement.cd;
+          }
+          changed = true;
+          return replacement;
+        })
+        .where((region) => seenCds.add(region.cd))
+        .toList();
 
     if (!changed) return;
     regions.value = migrated;

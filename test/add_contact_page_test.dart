@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/add_contact_page.dart';
+import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
 
 void main() {
@@ -28,5 +29,17 @@ void main() {
           .onPressed,
       isNull,
     );
+  });
+
+  testWidgets('비활성 버튼 글자는 흰색이 아니라 흐린 색으로 읽힌다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AddContactPage()));
+
+    final label = tester.widget<Text>(
+      find.descendant(
+        of: find.byType(CustomElevatedButton).last,
+        matching: find.byType(Text),
+      ),
+    );
+    expect(label.style?.color, AppColors.muted);
   });
 }

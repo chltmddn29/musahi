@@ -27,7 +27,9 @@ class RouteRepository {
           'endLng': destination.location.longitude,
         },
       );
-      return ShelterRoute.fromJson(response.data!);
+      final route = ShelterRoute.fromJson(response.data!);
+      // 경로를 찾지 못하면 서버가 빈 경로와 0m를 200으로 돌려준다.
+      return route.path.length < 2 ? _straightLineRoute(target) : route;
     } on Object catch (error) {
       // 재난 상황에서 안내가 끊기지 않도록 호출·파싱 실패 시 직선 경로로 대신한다.
       if (error is! DioException &&
@@ -49,6 +51,7 @@ class RouteRepository {
         minutes: (meters / _walkingMetersPerMinute).ceil(),
       ),
       nextStep: RouteStep.headToShelter,
+      isEstimated: true,
     );
   }
 }
