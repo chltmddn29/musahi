@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/category_selector.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
@@ -66,13 +67,8 @@ class _AddContactPageState extends State<AddContactPage> {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    // 서울(02) 번호는 최대 10자리다. 11자리를 받으면 제출 검증을 통과하지 못한다.
-    final isSeoul = digits.startsWith('02');
-    final maxLength = isSeoul ? 10 : 11;
-    final limited = digits.length > maxLength
-        ? digits.substring(0, maxLength)
-        : digits;
-    final prefixLength = isSeoul ? 2 : 3;
+    final limited = digits.length > 11 ? digits.substring(0, 11) : digits;
+    final prefixLength = limited.startsWith('02') ? 2 : 3;
 
     String formatted;
     if (limited.length <= prefixLength) {
@@ -104,6 +100,13 @@ class _AddContactPageState extends State<AddContactPage> {
               RegExp(
                 r'^(01[016789]-\d{3,4}-\d{4}|02-\d{3,4}-\d{4}|0[3-7]\d-\d{3,4}-\d{4})$',
               ).hasMatch(_phoneController.text.trim());
+          final phoneDigits = _phoneController.text.replaceAll(
+            RegExp(r'\D'),
+            '',
+          );
+          // 입력을 잘라 다른 번호로 바꾸지 않고, 사용자가 고치도록 이유를 알린다.
+          final seoulTooLong =
+              phoneDigits.startsWith('02') && phoneDigits.length > 10;
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,6 +127,16 @@ class _AddContactPageState extends State<AddContactPage> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                 ),
+                if (seoulTooLong)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '서울(02) 번호는 10자리까지입니다. 번호를 확인해 주세요.',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.alertCritical,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 20),
                 const Text('관계', style: AppTextStyles.cardTitle),
                 const SizedBox(height: 10),

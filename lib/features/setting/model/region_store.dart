@@ -36,7 +36,11 @@ class InterestRegionStore {
         regions.value = [];
       }
     }
-    primaryCd.value = prefs.getString(_primaryCdKey);
+    // 목록을 복원하지 못했는데 대표 코드만 남으면, 이후 추가하는 지역이 대표가 되지 못한다.
+    final savedPrimaryCd = prefs.getString(_primaryCdKey);
+    primaryCd.value = regions.value.any((r) => r.cd == savedPrimaryCd)
+        ? savedPrimaryCd
+        : null;
   }
 
   void add(RegionItem region) {

@@ -43,7 +43,7 @@ void main() {
     expect(label.style?.color, AppColors.muted);
   });
 
-  testWidgets('서울 번호는 10자리를 넘겨 입력해도 제출 가능한 형식으로 잘린다', (tester) async {
+  testWidgets('서울 번호 11자리는 잘라서 통과시키지 않고 제출을 막고 이유를 알린다', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AddContactPage()));
 
     final fields = find.byType(TextFormField);
@@ -51,7 +51,20 @@ void main() {
     await tester.enterText(fields.last, '02123456789');
     await tester.pump();
 
-    expect(find.text('02-1234-5678'), findsOneWidget);
+    // 입력한 숫자를 그대로 보여 주어야 사용자가 잘못을 알아본다.
+    expect(find.text('02-12345-6789'), findsOneWidget);
+    expect(find.text('02-1234-5678'), findsNothing);
+    expect(find.textContaining('10자리까지'), findsOneWidget);
+    expect(
+      tester
+          .widget<CustomElevatedButton>(find.byType(CustomElevatedButton).last)
+          .onPressed,
+      isNull,
+    );
+
+    await tester.enterText(fields.last, '0212345678');
+    await tester.pump();
+    expect(find.textContaining('10자리까지'), findsNothing);
     expect(
       tester
           .widget<CustomElevatedButton>(find.byType(CustomElevatedButton).last)

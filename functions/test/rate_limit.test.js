@@ -24,8 +24,24 @@ test("다시 오지 않는 클라이언트 항목은 쌓이지 않고 정리된�
     assert.ok(limiter.size <= 11, `size=${limiter.size}`);
 });
 
-test("윈도우 안의 클라이언트 항목은 정리하지 않는다", () => {
+test("윈도우 안에 서로 다른 클라이언트가 몰려도 추적 수가 상한을 넘지 않는다", () => {
+    const limiter = createRateLimiter(1000, 5, 10);
+    for (let i = 0; i < 5000; i++) limiter.isLimited(`ip-${i}`, i % 500);
+    assert.ok(limiter.size <= 10, `size=${limiter.size}`);
+});
+
+test("상한에서도 최근 활동한 클라이언트의 제한 기록은 유지한다", () => {
     const limiter = createRateLimiter(1000, 1, 2);
     for (let i = 0; i < 5; i++) limiter.isLimited(`ip-${i}`, 0);
-    assert.equal(limiter.isLimited("ip-0", 500), true);
+    assert.equal(limiter.isLimited("ip-4", 500), true);
+    assert.equal(limiter.isLimited("ip-3", 500), true);
+});
+
+test("활성 클라이언트가 많아도 정리는 윈도우당 한 번만 한다", () => {
+    const limiter = createRateLimiter(1000, 100, 3);
+    for (let i = 0; i < 20; i++) limiter.isLimited(`ip-${i}`, 10);
+    assert.equal(limiter.size, 3);
+    // 같은 윈도우 안의 새 요청도 상한을 지킨다.
+    for (let i = 20; i < 40; i++) limiter.isLimited(`ip-${i}`, 20);
+    assert.equal(limiter.size, 3);
 });

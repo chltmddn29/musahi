@@ -53,9 +53,16 @@ export function parseRegions(value: unknown): RegionFilter[] {
         });
 }
 
+// 시도 없이 통합특별시로만 온 필터는 광주·전남(과 같은 표기) 주소에만 일치한다.
+function isSameSido(filterSido: string, targetSido: string): boolean {
+    if (filterSido === targetSido) return true;
+    return filterSido === MERGED_GWANGJU_JEONNAM &&
+        (targetSido === "광주" || targetSido === "전남");
+}
+
 export function isInRegions(address: string, regions: RegionFilter[]): boolean {
     const target = splitSido(address);
     return regions.some(({sido, rest}) =>
-        (sido === target.sido || sido === MERGED_GWANGJU_JEONNAM) &&
+        isSameSido(sido, target.sido) &&
         (rest === "" || target.rest === rest || target.rest.startsWith(`${rest} `)));
 }
