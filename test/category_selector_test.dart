@@ -37,4 +37,35 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('글자 배율이 커져도 목록 높이가 따라 늘어 글자가 잘리지 않는다', (tester) async {
+    for (final scale in [1.0, 1.5, 2.5, 3.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: CategorySelector(
+              categories: const ['전체', '폭염', '지진'],
+              selectedCategory: '전체',
+              onCategorySelected: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final listHeight = tester.getSize(find.byType(CategorySelector)).height;
+      expect(listHeight, 40 * scale, reason: 'scale $scale');
+      expect(
+        tester.getSize(find.text('폭염')).height,
+        lessThanOrEqualTo(listHeight),
+        reason: 'scale $scale',
+      );
+      expect(tester.takeException(), isNull, reason: 'scale $scale');
+    }
+  });
 }

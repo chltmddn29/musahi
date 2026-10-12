@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
@@ -47,9 +49,8 @@ class CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(
-      context,
-    ).scale(1.0).clamp(1.0, 1.5);
+    // 상한을 두면 배율이 그 이상일 때 버튼 글자만 커져 위아래가 잘린다.
+    final textScale = max(1.0, MediaQuery.textScalerOf(context).scale(1.0));
     final resolvedHeight = height * textScale;
 
     final scrollableCategories = pinFirst
