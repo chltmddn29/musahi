@@ -67,6 +67,8 @@ final GoRouter goRouter = GoRouter(
                 GoRoute(
                   path: 'detail',
                   parentNavigatorKey: rootNavigatorKey,
+                  redirect: (context, state) =>
+                      state.extra is DisasterMessage ? null : '/info',
                   builder: (context, state) => DisasterDetailPage(
                     message: state.extra as DisasterMessage,
                   ),
@@ -84,6 +86,8 @@ final GoRouter goRouter = GoRouter(
                 GoRoute(
                   path: 'route',
                   parentNavigatorKey: rootNavigatorKey,
+                  redirect: (context, state) =>
+                      state.extra is RouteTarget ? null : '/shelter',
                   builder: (context, state) => ShelterRoutePage(
                     target: state.extra as RouteTarget,
                   ),

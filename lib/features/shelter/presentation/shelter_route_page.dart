@@ -68,6 +68,7 @@ class _ShelterRoutePageState extends State<ShelterRoutePage> {
                     child: RouteSummaryChip(
                       remainingTime: route.remainingTime,
                       remainingMeters: route.remainingMeters,
+                      isEstimated: route.isEstimated,
                     ),
                   ),
                 ),

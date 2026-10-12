@@ -44,16 +44,27 @@ class NotificationTopicSync {
       // Persist intent before FCM calls so interrupted/failed changes can be
       // reconciled on the next attempt, including after an app restart.
       await save();
+      // A stuck unsubscribe must not block new subscriptions; report it after.
+      Object? unsubscribeError;
+      StackTrace? unsubscribeStack;
       for (final topic in known.difference(desired)) {
-        await unsubscribe(topic);
-        known.remove(topic);
-        await save();
+        try {
+          await unsubscribe(topic);
+          known.remove(topic);
+          await save();
+        } on Object catch (error, stack) {
+          unsubscribeError ??= error;
+          unsubscribeStack ??= stack;
+        }
       }
       for (final topic in desired) {
         known.add(topic);
         await save();
         // Reapply even known topics: FCM may have issued a new device token.
         await subscribe(topic);
+      }
+      if (unsubscribeError != null) {
+        Error.throwWithStackTrace(unsubscribeError, unsubscribeStack!);
       }
     } finally {
       // Release the queue without hiding the error from this call's caller.

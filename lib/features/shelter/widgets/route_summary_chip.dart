@@ -8,11 +8,13 @@ import 'package:musahi/core/utils/format_duration.dart';
 class RouteSummaryChip extends StatelessWidget {
   final Duration remainingTime;
   final int remainingMeters;
+  final bool isEstimated;
 
   const RouteSummaryChip({
     super.key,
     required this.remainingTime,
     required this.remainingMeters,
+    this.isEstimated = false,
   });
 
   @override
@@ -31,7 +33,9 @@ class RouteSummaryChip extends StatelessWidget {
         ],
       ),
       child: Text(
-        '도보 ${formatDuration(remainingTime)} · ${formatDistance(remainingMeters)} 남음',
+        isEstimated
+            ? '직선 약 ${formatDistance(remainingMeters)} · 도보 ${formatDuration(remainingTime)} (추정)'
+            : '도보 ${formatDuration(remainingTime)} · ${formatDistance(remainingMeters)} 남음',
         style: AppTextStyles.label.copyWith(
           color: AppColors.text,
           fontSize: 13.5,

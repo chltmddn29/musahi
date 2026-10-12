@@ -28,8 +28,9 @@ class _InfoPageState extends State<InfoPage> {
   String selectedCategory = allCategory;
 
   /// 카테고리 변경 setState마다 Firestore 구독을 새로 열지 않도록 한 번만 만든다.
-  late final Stream<List<DisasterMessage>> _messages =
-      DisasterRepository.instance.watchMessage(limit: 50);
+  late final Stream<List<DisasterMessage>> _messages = DisasterRepository
+      .instance
+      .watchMessage(limit: 50);
 
   @override
   Widget build(BuildContext context) {
@@ -62,12 +63,18 @@ class _InfoPageState extends State<InfoPage> {
                 final allItems = snapshot.data!;
                 final items = switch (selectedCategory) {
                   allCategory => allItems,
-                  etcCategory => allItems
-                      .where((e) => !category.contains(e.category))
-                      .toList(),
-                  _ => allItems
-                      .where((e) => e.category == selectedCategory)
-                      .toList(),
+                  etcCategory =>
+                    allItems
+                        .where(
+                          (e) =>
+                              e.category == etcCategory ||
+                              !category.contains(e.category),
+                        )
+                        .toList(),
+                  _ =>
+                    allItems
+                        .where((e) => e.category == selectedCategory)
+                        .toList(),
                 };
                 if (items.isEmpty) {
                   return const Center(child: Text('해당 카테고리의 정보가 없습니다.'));
@@ -79,8 +86,7 @@ class _InfoPageState extends State<InfoPage> {
                       title: item.title,
                       severity: item.severity,
                       time: item.createdAt,
-                      onTap: () =>
-                          context.push('/info/detail', extra: item),
+                      onTap: () => context.push('/info/detail', extra: item),
                     );
                   },
                   separatorBuilder: (context, idx) =>

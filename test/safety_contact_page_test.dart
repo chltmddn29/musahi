@@ -64,6 +64,15 @@ void main() {
 
   tearDown(() => SafetyContactStore.instance.contacts.value = []);
 
+  testWidgets('edit and delete buttons have accessible labels', (tester) async {
+    await _pumpContacts(tester);
+
+    for (final contact in _contacts) {
+      expect(find.byTooltip('${contact.name} 수정'), findsOneWidget);
+      expect(find.byTooltip('${contact.name} 삭제'), findsOneWidget);
+    }
+  });
+
   testWidgets('contact rows fit a narrow screen without overflowing', (
     tester,
   ) async {

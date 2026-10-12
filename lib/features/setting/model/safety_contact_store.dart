@@ -23,10 +23,15 @@ class SafetyContactStore {
     final raw = prefs.getString(_prefsKey);
     if (raw == null) return;
 
-    final decoded = jsonDecode(raw) as List<dynamic>;
-    contacts.value = decoded
-        .map((e) => SafetyContact.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      contacts.value = decoded
+          .map((e) => SafetyContact.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on Object {
+      // 손상된 저장값 때문에 앱이 시작되지 못하면 앱 데이터를 지우기 전까지 복구할 수 없다.
+      contacts.value = [];
+    }
   }
 
   void add(SafetyContact contact) {

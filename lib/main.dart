@@ -64,6 +64,9 @@ class MyApp extends StatelessWidget {
         splashColor: AppColors.surface,
         fontFamily: 'Pretendard',
         scaffoldBackgroundColor: AppColors.background,
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: AppColors.primary,
+        ),
       ),
       builder: (context, child) {
         return ValueListenableBuilder<int>(

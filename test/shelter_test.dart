@@ -10,6 +10,7 @@ import 'package:musahi/features/shelter/model/shelter_route.dart';
 import 'package:musahi/features/shelter/service/location_service.dart';
 import 'package:musahi/features/shelter/widgets/nearby_shelter_list.dart';
 import 'package:musahi/features/shelter/widgets/route_start_button.dart';
+import 'package:musahi/features/shelter/widgets/route_summary_chip.dart';
 
 Shelter _shelter(String id, {int distance = 100}) => Shelter(
   id: id,
@@ -103,6 +104,18 @@ void main() {
       expect(shelter.location.latitude, 35.0);
       expect(shelter.location.longitude, 129.163916);
       expect(shelter.distanceMeters, 231);
+    });
+
+    test('RouteStep은 안내 문구가 없거나 비어 있으면 대피소 방향 안내로 대신한다', () {
+      for (final json in [
+        {'direction': 'left'},
+        {'direction': 'left', 'description': ''},
+        {'direction': 'left', 'description': '  '},
+      ]) {
+        final step = RouteStep.fromJson(json);
+        expect(step.direction, TurnDirection.left);
+        expect(step.description, RouteStep.headToShelter.description);
+      }
     });
 
     test('ShelterRoute는 경로·거리·시간·첫 안내를 읽는다', () {
@@ -326,6 +339,31 @@ void main() {
       expect(find.text('경로 안내 시작'), findsOneWidget);
       await tester.tap(find.text('경로 안내 시작'));
       expect(started, 0);
+    });
+  });
+
+  group('RouteSummaryChip', () {
+    Future<void> pumpChip(WidgetTester tester, {required bool estimated}) =>
+        tester.pumpWidget(
+          MaterialApp(
+            home: RouteSummaryChip(
+              remainingTime: const Duration(minutes: 5),
+              remainingMeters: 287,
+              isEstimated: estimated,
+            ),
+          ),
+        );
+
+    testWidgets('추정 경로는 직선 거리 추정임을 밝힌다', (tester) async {
+      await pumpChip(tester, estimated: true);
+      expect(find.textContaining('(추정)'), findsOneWidget);
+      expect(find.textContaining('남음'), findsNothing);
+    });
+
+    testWidgets('경로 API 결과는 추정 표시 없이 남은 거리를 보여준다', (tester) async {
+      await pumpChip(tester, estimated: false);
+      expect(find.textContaining('남음'), findsOneWidget);
+      expect(find.textContaining('(추정)'), findsNothing);
     });
   });
 }

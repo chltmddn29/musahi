@@ -16,15 +16,23 @@ class SettingsGroup extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: AppColors.cardShadow,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, thickness: 1, color: AppColors.divider),
-            children[i],
+      // 불투명한 배경이 InkWell 물결을 가리지 않도록 그 위에 투명 Material을 둔다.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0)
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.divider,
+                ),
+              children[i],
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

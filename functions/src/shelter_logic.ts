@@ -82,15 +82,24 @@ export function searchShelters(
         return {mode: "nearby", shelters: nearby.slice(0, limit).map(toResponse)};
     }
 
-    // 지역 중심 주변 대피소를 고른 뒤, 표시되는 거리(사용자 기준) 순으로 정렬한다.
-    const center = centroidOf(regionRows);
-    const aroundCenter = nearestTo(regionRows, center).slice(0, limit);
+    // 지역이 여럿이면 합친 중심이 지역 밖에 잡히므로, 사용자와 가까운 지역 하나를 고른다.
+    // 그 지역 중심 주변 대피소를 고른 뒤, 표시되는 거리(사용자 기준) 순으로 정렬한다.
+    const distanceToUser = (point: Point) => distanceMeters(user.lat, user.lng, point.lat, point.lng);
+    const [nearestRegionRows] = regions
+        .map((region) => rows.filter(([, , address]) => isInRegions(address, [region])))
+        .filter((group) => group.length > 0)
+        .sort((a, b) => distanceToUser(centroidOf(a)) - distanceToUser(centroidOf(b)));
+    const center = centroidOf(nearestRegionRows);
+    const aroundCenter = nearestTo(nearestRegionRows, center).slice(0, limit);
     return {
         mode: "region",
         center,
         shelters: nearestTo(aroundCenter, user).map(toResponse),
     };
 }
+
+/** 대피소가 한두 곳뿐인 지역은 반경이 0에 가까워 지도에서 원이 보이지 않는다. */
+const MIN_AREA_RADIUS_METERS = 500;
 
 /** 지역 내 대피소의 중심과, 대부분(90%)을 포함하는 반경. 섬 등 외곽값에 원이 커지지 않게 한다. */
 export function areaOf(region: RegionFilter, rows: ShelterRow[]) {
@@ -103,7 +112,7 @@ export function areaOf(region: RegionFilter, rows: ShelterRow[]) {
         .sort((a, b) => a - b);
     const radiusMeters = distances[Math.floor((distances.length - 1) * 0.9)];
 
-    return {name: region.name, center, radiusMeters: Math.round(radiusMeters)};
+    return {name: region.name, center, radiusMeters: Math.round(Math.max(radiusMeters, MIN_AREA_RADIUS_METERS))};
 }
 
 /** 청크 문서 id("{버전}-{번호}")에서 버전을 꺼낸다. 버전이 없는 옛 형식("0")은 0으로 본다. */

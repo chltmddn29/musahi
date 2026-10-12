@@ -14,6 +14,8 @@ enum AppLanguage {
   const AppLanguage(this.label);
 }
 
+const _supportedLanguages = {AppLanguage.korean};
+
 /// 앱 전역 언어 설정.
 ///
 /// [textSizeStep]처럼 전역 [ValueNotifier]로 관리한다. [loadLanguageSetting]으로
@@ -27,10 +29,14 @@ Future<void> loadLanguageSetting() async {
   final prefs = await SharedPreferences.getInstance();
   final saved = prefs.getString(_languageKey);
   if (saved == null) return;
-  currentLanguage.value = AppLanguage.values.firstWhere(
+  final restored = AppLanguage.values.firstWhere(
     (language) => language.name == saved,
     orElse: () => AppLanguage.korean,
   );
+  // 언어 화면이 한국어만 보여 주므로, 이전 버전에서 저장된 다른 언어는 복원하지 않는다.
+  currentLanguage.value = _supportedLanguages.contains(restored)
+      ? restored
+      : AppLanguage.korean;
 }
 
 Future<void> setLanguage(AppLanguage language) async {

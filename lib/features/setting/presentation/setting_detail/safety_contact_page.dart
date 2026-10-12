@@ -107,6 +107,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
+                                tooltip: '${contact.name} 수정',
                                 onPressed: () => context.push(
                                   '/setting/contacts/add',
                                   extra: contact,
@@ -121,6 +122,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                               ),
                               const SizedBox(width: 12),
                               IconButton(
+                                tooltip: '${contact.name} 삭제',
                                 onPressed: () =>
                                     SafetyContactStore.instance.remove(contact),
                                 icon: const Icon(

@@ -137,4 +137,25 @@ void main() {
     await sync.sync({'region_236_critical'});
     expect(added, ['region_236_critical', 'region_236_critical']);
   });
+
+  test('failed unsubscribe does not block new subscriptions', () async {
+    SharedPreferences.setMockInitialValues({
+      NotificationTopicSync.storageKey: ['region_237_safe'],
+    });
+    final added = <String>[];
+    final sync = NotificationTopicSync(
+      subscribe: (topic) async => added.add(topic),
+      unsubscribe: (_) async => throw PlatformException(code: 'offline'),
+    );
+    await expectLater(
+      sync.sync({'region_236_critical'}),
+      throwsA(isA<PlatformException>()),
+    );
+    expect(added, ['region_236_critical']);
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getStringList(NotificationTopicSync.storageKey),
+      containsAll(['region_237_safe', 'region_236_critical']),
+    );
+  });
 }
