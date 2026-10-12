@@ -66,8 +66,13 @@ class _AddContactPageState extends State<AddContactPage> {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final limited = digits.length > 11 ? digits.substring(0, 11) : digits;
-    final prefixLength = limited.startsWith('02') ? 2 : 3;
+    // 서울(02) 번호는 최대 10자리다. 11자리를 받으면 제출 검증을 통과하지 못한다.
+    final isSeoul = digits.startsWith('02');
+    final maxLength = isSeoul ? 10 : 11;
+    final limited = digits.length > maxLength
+        ? digits.substring(0, maxLength)
+        : digits;
+    final prefixLength = isSeoul ? 2 : 3;
 
     String formatted;
     if (limited.length <= prefixLength) {

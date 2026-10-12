@@ -42,4 +42,21 @@ void main() {
     );
     expect(label.style?.color, AppColors.muted);
   });
+
+  testWidgets('서울 번호는 10자리를 넘겨 입력해도 제출 가능한 형식으로 잘린다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AddContactPage()));
+
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.first, '김민수');
+    await tester.enterText(fields.last, '02123456789');
+    await tester.pump();
+
+    expect(find.text('02-1234-5678'), findsOneWidget);
+    expect(
+      tester
+          .widget<CustomElevatedButton>(find.byType(CustomElevatedButton).last)
+          .onPressed,
+      isNotNull,
+    );
+  });
 }

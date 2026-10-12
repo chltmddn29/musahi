@@ -42,5 +42,10 @@
 ## 주의
 
 - `config/dev.json`(SGIS 키)은 gitignore 대상이다. 읽거나 출력하거나 커밋하지 않는다.
-- iOS 시뮬레이터는 APNS 토큰을 발급하지 못해 알림 동기화가 타임아웃된다. 시뮬레이터의 동기화 오류는 실제 버그가 아닐 수 있다 (`docs/qa-notes.md` QA-001).
+- iOS 시뮬레이터에서 알림 동기화 오류가 나는 것은 알려진 현상이다 (`docs/qa-notes.md` QA-001).
+  - 증상: 설정 탭 상단에 "알림 설정을 서버에 반영하지 못했습니다. 연결 후 다시 시도해주세요." 배너가 뜨고, 다시 시도해도 사라지지 않는다. 알림 토글을 바꾸면 화면 값은 바뀌지만 배너는 그대로다.
+  - 추정 원인: 시뮬레이터가 APNS 토큰을 발급하지 못해 `NotificationService._waitForApnsToken()`(`lib/core/notifications/notification_service.dart`)이 10초 뒤 `TimeoutException`을 던진다. 로그로 확정한 것은 아니다.
+  - 확인된 환경: iPhone 16 Pro 시뮬레이터(iOS 18.5)에서 재현했다. 다른 시뮬레이터 버전이나 APNs 샌드박스를 지원하는 환경에서는 다를 수 있다.
+  - 이 증상만으로는 버그로 보고하지도, 버그가 아니라고 단정하지도 않는다. 알림 동기화(`notification_service.dart`, `notification_topic_sync.dart`, 설정 화면의 알림 토글)를 바꿨다면 실기기에서 배너가 사라지는지, 토픽 구독이 바뀌는지 확인한다.
+  - 시뮬레이터에서 FCM 토픽 구독을 검증할 수 없으므로, 토픽 이름과 동기화 순서는 `test/notification_topic_sync_test.dart` 단위 테스트로 확인한다.
 - 사용자에게 보이는 문구는 한국어로 쓴다. 사실과 다른 인상을 주지 않게 쓴다 (예: 실제로 전송하지 않는 화면에 "전송 완료"라고 쓰지 않는다).
