@@ -1,76 +1,128 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/core/notifications/notification_sync_status.dart';
+import 'package:musahi/core/settings/language_settings.dart';
+import 'package:musahi/core/settings/notification_settings.dart';
+import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/features/setting/model/menu_model.dart';
+import 'package:musahi/features/setting/model/region_model.dart';
+import 'package:musahi/features/setting/model/region_store.dart';
+import 'package:musahi/features/setting/model/safety_contact_model.dart';
+import 'package:musahi/features/setting/model/safety_contact_store.dart';
+import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
   @override
-  State<SettingPage> createState() => _SettingPageState();
-}
-
-class _SettingPageState extends State<SettingPage> {
-  final switchValues = [true, false];
-
-  @override
   Widget build(BuildContext context) {
-    final toggleItems = [
-      SettingMenuItem(
-        icon: Icons.notifications,
-        title: '재난문자 알림',
-        isSwitch: true,
-        switchValue: switchValues[0],
-        onSwitchChanged: (v) => setState(() => switchValues[0] = v),
-      ),
-      SettingMenuItem(
-        icon: Icons.check_circle_outline,
-        title: '안전 안내 알림',
-        isSwitch: true,
-        switchValue: switchValues[1],
-        onSwitchChanged: (v) => setState(() => switchValues[1] = v),
-      ),
-    ];
-    final navItems = [
-      SettingMenuItem(
-        icon: Icons.language,
-        title: '언어 설정',
-        subTitle: '한국어',
-        onPressed: () => context.push('/setting/language'),
-      ),
-      SettingMenuItem(
-        icon: Icons.map,
-        title: '관심지역 관리',
-        subTitle: '서울 강남구 외 1곳',
-        onPressed: () => context.push('/setting/region'),
-      ),
-      SettingMenuItem(
-        icon: Icons.people,
-        title: '안전 연락처 관리',
-        subTitle: '2명',
-        onPressed: () => context.push('/setting/contacts'),
-      ),
-      SettingMenuItem(
-        icon: Icons.text_fields,
-        title: '텍스트 크기 조절',
-        subTitle: '보통',
-        onPressed: () => context.push('/setting/text-size'),
-      ),
-    ];
     return BaseScaffold(
       appBar: const CustomAppBar(title: '설정', icon: false),
       child: ListView(
         children: [
           const SizedBox(height: 100),
-          _buildGroup(toggleItems),
+          const NotificationSyncStatus(),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              disasterAlertEnabled,
+              safetyGuideAlertEnabled,
+            ]),
+            builder: (context, _) => _buildGroup([
+              SettingMenuItem(
+                icon: Icons.notifications,
+                title: '재난문자 알림',
+                isSwitch: true,
+                switchValue: disasterAlertEnabled.value,
+                onSwitchChanged: setDisasterAlertEnabled,
+              ),
+              SettingMenuItem(
+                icon: Icons.check_circle_outline,
+                title: '안전 안내 알림',
+                isSwitch: true,
+                switchValue: safetyGuideAlertEnabled.value,
+                onSwitchChanged: setSafetyGuideAlertEnabled,
+              ),
+            ]),
+          ),
           const SizedBox(height: 40),
-          _buildGroup(navItems),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              textSizeStep,
+              currentLanguage,
+              InterestRegionStore.instance.regions,
+              InterestRegionStore.instance.primaryCd,
+              SafetyContactStore.instance.contacts,
+            ]),
+            builder: (context, _) => _buildGroup(
+              _navItems(
+                context,
+                textSizeStepValue: textSizeStep.value,
+                language: currentLanguage.value,
+                regions: InterestRegionStore.instance.regions.value,
+                primaryCd: InterestRegionStore.instance.primaryCd.value,
+                contacts: SafetyContactStore.instance.contacts.value,
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  List<SettingMenuItem> _navItems(
+    BuildContext context, {
+    required int textSizeStepValue,
+    required AppLanguage language,
+    required List<RegionItem> regions,
+    required String? primaryCd,
+    required List<SafetyContact> contacts,
+  }) {
+    return [
+      SettingMenuItem(
+        icon: Icons.language,
+        title: '언어 설정',
+        subTitle: language.label,
+        onPressed: () => context.push('/setting/language'),
+      ),
+      SettingMenuItem(
+        icon: Icons.map,
+        title: '관심지역 관리',
+        subTitle: _regionSubtitle(regions, primaryCd),
+        onPressed: () => context.push('/setting/region'),
+      ),
+      SettingMenuItem(
+        icon: Icons.people,
+        title: '안전 연락처 관리',
+        subTitle: _contactSubtitle(contacts),
+        onPressed: () => context.push('/setting/contacts'),
+      ),
+      SettingMenuItem(
+        icon: Icons.text_fields,
+        title: '텍스트 크기 조절',
+        subTitle: TextSizePage.stepLabels[textSizeStepValue],
+        onPressed: () => context.push('/setting/text-size'),
+      ),
+    ];
+  }
+
+  String _regionSubtitle(List<RegionItem> regions, String? primaryCd) {
+    if (regions.isEmpty) return '설정 필요';
+    final primary = regions.firstWhere(
+      (r) => r.cd == primaryCd,
+      orElse: () => regions.first,
+    );
+    final extraCount = regions.length - 1;
+    return extraCount > 0
+        ? '${primary.addrName} 외 $extraCount곳'
+        : primary.addrName;
+  }
+
+  String _contactSubtitle(List<SafetyContact> contacts) {
+    return contacts.isEmpty ? '설정 필요' : '${contacts.length}명';
   }
 }
 
