@@ -1,5 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
@@ -75,11 +73,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
         if (cd == null) _notificationRegions = results[1];
         _isLoading = false;
       });
-    } on FirebaseException catch (error) {
-      _showLoadError(error);
-    } on DioException catch (error) {
-      _showLoadError(error);
-    } on FormatException catch (error) {
+    } catch (error) {
       _showLoadError(error);
     }
   }
@@ -335,7 +329,11 @@ class _RegionManagePageState extends State<RegionManagePage> {
                     children: [
                       Text(_errorMessage!),
                       TextButton(
-                        onPressed: _loadRegions,
+                        onPressed: () => _loadRegions(
+                          cd: _selectionPath.isEmpty
+                              ? null
+                              : _selectionPath.last.cd,
+                        ),
                         child: const Text('다시 시도'),
                       ),
                     ],

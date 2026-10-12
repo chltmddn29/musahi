@@ -152,7 +152,7 @@ class InfoCard extends StatelessWidget {
     final content = Padding(
       padding: flat
           ? const EdgeInsets.symmetric(horizontal: 16, vertical: 14)
-          : const EdgeInsets.all(16),
+          : const EdgeInsets.all(10),
       child: Row(
         crossAxisAlignment: crossAxisAlignment,
         children: [
@@ -164,8 +164,10 @@ class InfoCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style:
-                      flat ? AppTextStyles.bodyMedium : AppTextStyles.cardTitle,
+                  flat ? AppTextStyles.bodyMedium : AppTextStyles.cardTitle,
                 ),
                 if (caption != null) ...[
                   const SizedBox(height: 4),

@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:musahi/core/navigator/custom_bottom_navigator_bar.dart';
 import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
+import 'package:musahi/features/disaster/model/disaster_message.dart';
+import 'package:musahi/features/disaster/presentation/disaster_detail_page.dart';
 import 'package:musahi/features/guide/guide_page.dart';
 import 'package:musahi/features/main/presentation/info_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/add_contact_page.dart';
@@ -11,6 +13,7 @@ import 'package:musahi/features/setting/presentation/setting_detail/safety_conta
 import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/presentation/setting_page.dart';
+import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/share_page.dart';
 import 'package:musahi/features/shelter/shelter_page.dart';
 
@@ -28,6 +31,15 @@ final GoRouter goRouter = GoRouter(
             GoRoute(
               path: '/info',
               builder: (context, state) => const InfoPage(),
+              routes: [
+                GoRoute(
+                  path: 'detail',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (context, state) => DisasterDetailPage(
+                    message: state.extra as DisasterMessage,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -52,6 +64,18 @@ final GoRouter goRouter = GoRouter(
             GoRoute(
               path: '/share',
               builder: (context, state) => const SharePage(),
+              routes: [
+                GoRoute(
+                  path: 'complete',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (context, state) {
+                    final preview = state.extra;
+                    return ShareCompletePage(
+                      preview: preview is SafetySharePreview ? preview : null,
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
