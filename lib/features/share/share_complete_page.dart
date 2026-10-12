@@ -54,31 +54,33 @@ class ShareCompletePage extends StatelessWidget {
                         height: 84,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.success, width: 3),
+                          border: Border.all(color: AppColors.primary, width: 3),
                         ),
                         child: const Icon(
-                          Icons.check_circle_outline,
+                          Icons.info_outline,
                           size: 38,
-                          color: AppColors.success,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        '전송 완료',
+                        '미리보기 완료',
                         style: AppTextStyles.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '실제 메시지는 전송되지 않았습니다.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        '공유 대상: ${data.contactNames.join(', ')}\n'
+                        '미리보기 대상: ${data.contactNames.join(', ')}\n'
                         '${_formatTime(data.createdAt)}',
                         style: AppTextStyles.captionMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        '완료 화면 미리보기입니다.\n실제 메시지는 전송되지 않았습니다.',
-                        style: AppTextStyles.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                     ] else

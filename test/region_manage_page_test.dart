@@ -241,4 +241,44 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('ignores a stale child fetch after navigating back', (
+    tester,
+  ) async {
+    RegionItem sgis(String name, String cd) =>
+        RegionItem(addrName: name, cd: cd, fullAddr: '', yCoor: '', xCoor: '');
+    final pending = <String?, List<Completer<List<RegionItem>>>>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RegionManagePage(
+          repository: _Repository(
+            fetch: (cd) {
+              final completer = Completer<List<RegionItem>>();
+              pending.putIfAbsent(cd, () => []).add(completer);
+              return completer.future;
+            },
+            fetchNotifications: () async => [],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('관심지역 추가'));
+    await tester.pump();
+    pending[null]!.single.complete([sgis('Seoul', '11')]);
+    await tester.pumpAndSettle();
+
+    // 서울로 들어간 직후, 하위 응답이 오기 전에 뒤로 간다.
+    await tester.tap(find.text('Seoul'));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pump();
+
+    pending[null]!.last.complete([sgis('Seoul', '11')]);
+    await tester.pumpAndSettle();
+    pending['11']!.single.complete([sgis('Gangnam', '11230')]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Seoul'), findsOneWidget);
+    expect(find.text('Gangnam'), findsNothing);
+  });
 }

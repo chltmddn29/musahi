@@ -4,7 +4,9 @@ import 'package:musahi/core/notifications/notification_service.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/disaster/presentation/disaster_detail_page.dart';
-import 'package:musahi/features/guide/guide_page.dart';
+import 'package:musahi/features/guide/presentation/guide_detail_page.dart';
+import 'package:musahi/features/guide/presentation/guide_page.dart';
+import 'package:musahi/features/guide/model/disaster_guide.dart';
 import 'package:musahi/features/main/presentation/info_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/add_contact_page.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/language_change_page.dart';
@@ -29,6 +31,27 @@ final GoRouter goRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       builder: (context, state) =>
           ShelterPage(disasterRegion: state.extra as String?),
+    ),
+    // 재난문자 상세에서 여는 유형별 행동요령.
+    GoRoute(
+      path: '/guide-detail',
+      parentNavigatorKey: rootNavigatorKey,
+      // 딥링크·웹 새로고침처럼 extra 없이 들어오면 행동요령 탭으로 보낸다.
+      redirect: (context, state) {
+        final message = state.extra;
+        return message is DisasterMessage &&
+                DisasterGuide.of(message.category) != null
+            ? null
+            : '/guide';
+      },
+      builder: (context, state) {
+        final message = state.extra as DisasterMessage;
+        return GuideDetailPage(
+          guide: DisasterGuide.of(message.category)!,
+          disasterRegion:
+              message.regionName.isEmpty ? null : message.regionName,
+        );
+      },
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

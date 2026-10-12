@@ -67,16 +67,18 @@ class _AddContactPageState extends State<AddContactPage> {
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final limited = digits.length > 11 ? digits.substring(0, 11) : digits;
+    final prefixLength = limited.startsWith('02') ? 2 : 3;
 
     String formatted;
-    if (limited.length <= 3) {
+    if (limited.length <= prefixLength) {
       formatted = limited;
-    } else if (limited.length <= 7) {
-      formatted = '${limited.substring(0, 3)}-${limited.substring(3)}';
-    } else {
-      final midEnd = limited.length == 11 ? 7 : limited.length - 4;
+    } else if (limited.length <= prefixLength + 4) {
       formatted =
-          '${limited.substring(0, 3)}-${limited.substring(3, midEnd)}-${limited.substring(midEnd)}';
+          '${limited.substring(0, prefixLength)}-${limited.substring(prefixLength)}';
+    } else {
+      final midEnd = limited.length - 4;
+      formatted =
+          '${limited.substring(0, prefixLength)}-${limited.substring(prefixLength, midEnd)}-${limited.substring(midEnd)}';
     }
 
     return TextEditingValue(
@@ -95,7 +97,7 @@ class _AddContactPageState extends State<AddContactPage> {
           final canSubmit =
               _nameController.text.trim().length >= 2 &&
               RegExp(
-                r'^\d{3}-\d{3,4}-\d{4}$',
+                r'^(01[016789]-\d{3,4}-\d{4}|02-\d{3,4}-\d{4}|0[3-7]\d-\d{3,4}-\d{4})$',
               ).hasMatch(_phoneController.text.trim());
           return SingleChildScrollView(
             child: Column(
@@ -110,9 +112,7 @@ class _AddContactPageState extends State<AddContactPage> {
                 const SizedBox(height: 20),
                 CustomTextField(
                   inputFormatters: [
-                    const TextInputFormatter.withFunction(
-                      _formatPhoneNumber,
-                    ),
+                    const TextInputFormatter.withFunction(_formatPhoneNumber),
                   ],
                   label: '전화번호',
                   hintText: '010-0000-0000',

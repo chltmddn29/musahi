@@ -4,6 +4,7 @@ import 'package:musahi/core/utils/category_selector.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/core/widgets/info_card.dart';
+import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/disaster/repository/disaster_repository.dart';
 
 class InfoPage extends StatefulWidget {
@@ -26,6 +27,10 @@ class _InfoPageState extends State<InfoPage> {
   ];
   String selectedCategory = allCategory;
 
+  /// 카테고리 변경 setState마다 Firestore 구독을 새로 열지 않도록 한 번만 만든다.
+  late final Stream<List<DisasterMessage>> _messages =
+      DisasterRepository.instance.watchMessage(limit: 50);
+
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
@@ -46,7 +51,7 @@ class _InfoPageState extends State<InfoPage> {
           const SizedBox(height: 15),
           Expanded(
             child: StreamBuilder(
-              stream: DisasterRepository.instance.watchMessage(limit: 50),
+              stream: _messages,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('오류가 발생했습니다: ${snapshot.error}'));

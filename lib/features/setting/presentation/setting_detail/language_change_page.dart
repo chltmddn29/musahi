@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
-import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
-import 'package:musahi/features/setting/widget/language_selection_tile.dart';
 
 class LanguageChangePage extends StatelessWidget {
   const LanguageChangePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final languages = AppLanguage.values;
-
     return BaseScaffold(
       appBar: const CustomAppBar(title: '언어 설정', icon: true),
       child: Padding(
@@ -32,27 +28,17 @@ class LanguageChangePage extends StatelessWidget {
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: ValueListenableBuilder<AppLanguage>(
-              valueListenable: currentLanguage,
-              builder: (context, selected, _) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(languages.length, (index) {
-                    final language = languages[index];
-                    return LanguageSelectionTile<AppLanguage>(
-                      languageName: language.label,
-                      value: language,
-                      groupValue: selected,
-                      onChanged: (l) {
-                        if (l != null) setLanguage(l);
-                      },
-                      showDivider: index != languages.length - 1,
-                    );
-                  }),
-                );
-              },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(title: Text('한국어'), trailing: Icon(Icons.check)),
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('현재 한국어만 지원합니다.'),
+                ),
+              ],
             ),
           ),
         ),
