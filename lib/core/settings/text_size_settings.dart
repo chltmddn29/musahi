@@ -13,7 +13,11 @@ final ValueNotifier<int> textSizeStep = ValueNotifier<int>(1);
 
 Future<void> loadTextSizeSetting() async {
   final prefs = await SharedPreferences.getInstance();
-  textSizeStep.value = prefs.getInt(_textSizeStepKey) ?? 1;
+  final saved = prefs.getInt(_textSizeStepKey) ?? 1;
+  // 범위를 벗어난 저장값은 textScaleForStep에서 RangeError가 나 앱 전체 렌더링이 실패한다.
+  textSizeStep.value = saved >= 0 && saved < textSizeStepFontSizes.length
+      ? saved
+      : 1;
 }
 
 Future<void> setTextSizeStep(int step) async {

@@ -26,17 +26,22 @@ class CategorySelector extends StatelessWidget {
 
   Widget _categoryButton(String category) {
     final isSelected = category == selectedCategory;
-    return CustomElevatedButton(
-      onPressed: () => onCategorySelected(category),
-      backgroundColor: isSelected ? AppColors.primary : AppColors.surface,
-      foregroundColor: isSelected ? AppColors.surface : AppColors.primary,
-      // 흰 배경 버튼이 화면 배경과 거의 같은 색이라 스크롤 끝에서 잘릴 때
-      // 경계가 안 보이고 뚝 끊긴 것처럼 보였다. 연한 테두리를 둘러서
-      // 잘려도 "카드가 계속 이어진다"는 게 분명히 보이도록 한다.
-      borderColor: isSelected
-          ? null
-          : AppColors.primary.withValues(alpha: 0.25),
-      child: category,
+    return MergeSemantics(
+      child: Semantics(
+        selected: isSelected,
+        child: CustomElevatedButton(
+          onPressed: () => onCategorySelected(category),
+          backgroundColor: isSelected ? AppColors.primary : AppColors.surface,
+          foregroundColor: isSelected ? AppColors.surface : AppColors.primary,
+          // 흰 배경 버튼이 화면 배경과 거의 같은 색이라 스크롤 끝에서 잘릴 때
+          // 경계가 안 보이고 뚝 끊긴 것처럼 보였다. 연한 테두리를 둘러서
+          // 잘려도 "카드가 계속 이어진다"는 게 분명히 보이도록 한다.
+          borderColor: isSelected
+              ? null
+              : AppColors.primary.withValues(alpha: 0.25),
+          child: category,
+        ),
+      ),
     );
   }
 

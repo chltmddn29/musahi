@@ -21,6 +21,16 @@ void main() {
     expect(textSizeStep.value, 3);
   });
 
+  test('out-of-range saved text size falls back to the default', () async {
+    for (final saved in [-1, 4, 99]) {
+      SharedPreferences.setMockInitialValues({'text_size_step': saved});
+      textSizeStep.value = 3;
+      await loadTextSizeSetting();
+      expect(textSizeStep.value, 1);
+      expect(() => textScaleForStep(textSizeStep.value), returnsNormally);
+    }
+  });
+
   test('notification toggles persist across reloads', () async {
     await loadNotificationSettings();
     expect(disasterAlertEnabled.value, true);
