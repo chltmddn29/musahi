@@ -14,14 +14,23 @@ class CustomBottomNavigatorBar extends StatelessWidget {
     );
   }
 
+  static const _navIconTheme = IconThemeData(size: 24);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
+        elevation: 0,
+        backgroundColor: AppColors.background,
+        enableFeedback: true,
         type: BottomNavigationBarType.fixed,
         unselectedItemColor: AppColors.muted,
         selectedItemColor: AppColors.primary,
+        unselectedFontSize: 12,
+        selectedFontSize: 12,
+        selectedIconTheme: _navIconTheme,
+        unselectedIconTheme: _navIconTheme,
         currentIndex: navigationShell.currentIndex,
         onTap: _onTap,
         items: const [

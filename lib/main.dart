@@ -20,10 +20,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: goRouter,
-      title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        splashColor: AppColors.surface,
         fontFamily: 'Pretendard',
         scaffoldBackgroundColor: AppColors.background,
       ),

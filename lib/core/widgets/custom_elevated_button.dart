@@ -6,12 +6,14 @@ class CustomElevatedButton extends StatelessWidget {
   final void Function() onPressed;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final String child;
 
   const CustomElevatedButton({
     super.key,
     required this.onPressed,
     this.backgroundColor,
     this.foregroundColor,
+    required this.child,
   });
 
   @override
@@ -23,7 +25,7 @@ class CustomElevatedButton extends StatelessWidget {
       ),
       onPressed: onPressed,
       child: Text(
-        '확인',
+        child,
         style: AppTextStyles.bodyLarge.copyWith(
           color: foregroundColor ?? AppColors.surface,
         ),
