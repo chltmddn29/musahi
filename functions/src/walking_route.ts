@@ -21,7 +21,7 @@ function toDirection(turnType: number): "left" | "right" | "straight" {
 }
 
 /** TMAP GeoJSON 응답을 앱이 쓰는 형태({path, totalDistance, totalTime, steps})로 줄인다. */
-function simplifyRoute(features: any[]) {
+export function simplifyRoute(features: any[]) {
     const summary = features[0]?.properties ?? {};
     const path: [number, number][] = [];
     const steps: {direction: string; description: string}[] = [];
@@ -30,7 +30,7 @@ function simplifyRoute(features: any[]) {
         if (geometry.type === "LineString") {
             for (const [lng, lat] of geometry.coordinates) path.push([lat, lng]);
         } else if (geometry.type === "Point" && !START_OR_END.has(properties.turnType)) {
-            steps.push({direction: toDirection(properties.turnType), description: properties.description});
+            steps.push({direction: toDirection(properties.turnType), description: properties.description ?? ""});
         }
     }
 

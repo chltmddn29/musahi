@@ -17,12 +17,18 @@ class RouteStep {
     description: '대피소 방향으로 이동하세요',
   );
 
-  factory RouteStep.fromJson(Map<String, dynamic> json) => RouteStep(
-    direction:
-        TurnDirection.values.asNameMap()[json['direction']] ??
-        TurnDirection.straight,
-    description: json['description'] as String,
-  );
+  factory RouteStep.fromJson(Map<String, dynamic> json) {
+    final description = (json['description'] as String?)?.trim();
+    return RouteStep(
+      direction:
+          TurnDirection.values.asNameMap()[json['direction']] ??
+          TurnDirection.straight,
+      // 경로 API가 안내 문구를 비워 주면 대피소 방향 안내로 대신한다.
+      description: description == null || description.isEmpty
+          ? headToShelter.description
+          : description,
+    );
+  }
 }
 
 class ShelterRoute {

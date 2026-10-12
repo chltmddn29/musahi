@@ -106,6 +106,18 @@ void main() {
       expect(shelter.distanceMeters, 231);
     });
 
+    test('RouteStep은 안내 문구가 없거나 비어 있으면 대피소 방향 안내로 대신한다', () {
+      for (final json in [
+        {'direction': 'left'},
+        {'direction': 'left', 'description': ''},
+        {'direction': 'left', 'description': '  '},
+      ]) {
+        final step = RouteStep.fromJson(json);
+        expect(step.direction, TurnDirection.left);
+        expect(step.description, RouteStep.headToShelter.description);
+      }
+    });
+
     test('ShelterRoute는 경로·거리·시간·첫 안내를 읽는다', () {
       final route = ShelterRoute.fromJson({
         'path': [
