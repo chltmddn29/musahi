@@ -9,6 +9,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import {createShelterFunctions} from "./shelters";
 import {safeErrorSummary} from "./errors";
+import {createRateLimiter} from "./rate_limit";
 import {
     SGIS_API_URL, ensureSgisAccessToken, isSgisAuthError, resetSgisAccessToken,
     sgisConsumerKey, sgisConsumerSecret,
@@ -216,26 +217,7 @@ export const pollDisasterAlerts = onSchedule(
     }
 );
 
-// 인스턴스별 최소한의 rate limit이다. 분산 환경에서 완전한 보장은 아니지만,
-// 단일 호출자가 SGIS quota와 함수 비용을 소진시키는 것을 완화한다.
-const SGIS_RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const SGIS_RATE_LIMIT_MAX_REQUESTS = 30;
-const sgisRequestTimestamps = new Map<string, number[]>();
-
-function isSgisRateLimited(clientId: string): boolean {
-    const now = Date.now();
-    const windowStart = now - SGIS_RATE_LIMIT_WINDOW_MS;
-    const timestamps = (sgisRequestTimestamps.get(clientId) ?? []).filter(
-        (ts) => ts > windowStart
-    );
-    if (timestamps.length >= SGIS_RATE_LIMIT_MAX_REQUESTS) {
-        sgisRequestTimestamps.set(clientId, timestamps);
-        return true;
-    }
-    timestamps.push(now);
-    sgisRequestTimestamps.set(clientId, timestamps);
-    return false;
-}
+const sgisRateLimiter = createRateLimiter(60 * 1000, 30);
 
 export const sgisRegions = onRequest(
     {
@@ -251,7 +233,7 @@ export const sgisRegions = onRequest(
             return;
         }
 
-        if (isSgisRateLimited(req.ip ?? "unknown")) {
+        if (sgisRateLimiter.isLimited(req.ip ?? "unknown")) {
             res.status(429).json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." });
             return;
         }
