@@ -43,6 +43,7 @@ Future<void> _initializeRemoteServices() async {
 }
 
 Future<void> _migrateLegacyInterestRegions() async {
+  if (!InterestRegionStore.instance.hasLegacyRegions) return;
   try {
     final serverRegions = await RegionRepository().fetchNotificationRegions();
     await InterestRegionStore.instance.migrateLegacyRegions(serverRegions);

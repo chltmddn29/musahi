@@ -22,6 +22,10 @@ class InterestRegionStore {
   /// 대표 지역의 지역코드(cd). 목록이 비면 null.
   final ValueNotifier<String?> primaryCd = ValueNotifier(null);
 
+  /// 재난문자 서버 코드로 아직 전환하지 못한 기존 SGIS 관심지역이 있는지.
+  bool get hasLegacyRegions =>
+      regions.value.any((region) => region.notificationCode == null);
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_regionsKey);

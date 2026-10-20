@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:musahi/core/constants/api.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 
@@ -32,8 +33,19 @@ class RegionRepository {
       databaseId: 'musahi',
     );
     final snapshot = await db.collection('regions').get();
-    return snapshot.docs
-        .map((doc) => RegionItem.fromDisasterRegion(doc.data()))
-        .toList();
+    return [
+      for (final doc in snapshot.docs)
+        // 문서 하나가 잘못돼도 나머지 지역으로 전환·선택할 수 있게 건너뛴다.
+        ?_parseDisasterRegion(doc.data()),
+    ];
+  }
+
+  RegionItem? _parseDisasterRegion(Map<String, dynamic> data) {
+    try {
+      return RegionItem.fromDisasterRegion(data);
+    } on FormatException catch (error) {
+      debugPrint('잘못된 재난문자 수신지역 문서를 건너뜀: $error');
+      return null;
+    }
   }
 }

@@ -76,4 +76,18 @@ void main() {
     await store.load();
     expect(store.primaryCd.value, region.cd);
   });
+
+  test('서버 코드로 전환하지 못한 지역이 있을 때만 hasLegacyRegions가 true다', () {
+    expect(store.hasLegacyRegions, isFalse);
+
+    final converted = RegionItem.fromDisasterRegion({
+      'code': '1',
+      'name': 'Seoul Jongno',
+    });
+    store.regions.value = [converted];
+    expect(store.hasLegacyRegions, isFalse);
+
+    store.regions.value = [converted, _legacy('a', 'Seoul Jongno Cheongun')];
+    expect(store.hasLegacyRegions, isTrue);
+  });
 }
