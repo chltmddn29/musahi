@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/info_card.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 오류 문구와 다시 시도 버튼.
 class ShelterErrorView extends StatelessWidget {
@@ -27,7 +28,10 @@ class ShelterErrorView extends StatelessWidget {
               align: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            CustomElevatedButton(onPressed: onRetry, child: '다시 시도'),
+            CustomElevatedButton(
+              onPressed: onRetry,
+              child: AppLocalizations.of(context).retry,
+            ),
           ],
         ),
       ),

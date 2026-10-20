@@ -26,10 +26,7 @@ Future<void> setTextSizeStep(int step) async {
   await prefs.setInt(_textSizeStepKey, step);
 }
 
-/// 단계별 라벨. 인덱스가 곧 단계 값이다.
-const List<String> textSizeStepLabels = ['작게', '보통', '크게', '매우크게'];
-
-/// 단계별 실제 폰트 크기(sp). [textSizeStepLabels]와 인덱스가 대응된다.
+/// 단계별 실제 폰트 크기(sp). 인덱스가 곧 단계 값이다.
 const List<double> textSizeStepFontSizes = [14, 17, 21, 26];
 
 /// [step] 단계에 해당하는 전역 텍스트 배율.

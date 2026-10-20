@@ -9,6 +9,8 @@ import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/disaster/widgets/disaster_area_map.dart';
 import 'package:musahi/features/guide/model/disaster_guide.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 /// 재난문자 상세 페이지. [InfoPage]의 카드를 탭하면 전체 내용을 보여준다.
 class DisasterDetailPage extends StatelessWidget {
@@ -18,13 +20,14 @@ class DisasterDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final meta = [
       message.regionName,
       message.createdAt,
     ].where((e) => e.isNotEmpty).join(' · ');
 
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '재난문자 상세', icon: true),
+      appBar: CustomAppBar(title: l10n.disasterDetailTitle, icon: true),
       child: Column(
         children: [
           Expanded(
@@ -63,7 +66,7 @@ class DisasterDetailPage extends StatelessWidget {
                 backgroundColor: AppColors.surface,
                 foregroundColor: AppColors.primary,
                 borderColor: AppColors.primary.withValues(alpha: 0.4),
-                child: '행동요령 보기',
+                child: l10n.disasterShowGuide,
               ),
             ),
           ],
@@ -76,7 +79,7 @@ class DisasterDetailPage extends StatelessWidget {
                   '/disaster-shelters',
                   extra: message.regionName.isEmpty ? null : message.regionName,
                 ),
-                child: '대피소 보기',
+                child: l10n.disasterShowShelters,
               ),
             ),
           ],
@@ -102,7 +105,7 @@ class _SeverityTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        severity,
+        severityLabel(AppLocalizations.of(context), severity),
         style: AppTextStyles.label.copyWith(
           color: AppColors.severityColor(severity),
           fontWeight: FontWeight.w700,

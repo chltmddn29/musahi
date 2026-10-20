@@ -4,6 +4,8 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'share_section_title.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 class ShareContactSection extends StatelessWidget {
   final List<SafetyContact> contacts;
@@ -12,15 +14,16 @@ class ShareContactSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ShareSectionTitle('등록된 안전 연락처'),
+        ShareSectionTitle(l10n.shareContactsTitle),
         const SizedBox(height: 10),
         if (contacts.isEmpty)
           InfoCard(
-            title: '등록된 안전 연락처가 없습니다',
-            caption: '연락처를 추가해 안전 상태를 공유할 준비를 해 주세요.',
+            title: l10n.shareContactsEmpty,
+            caption: l10n.shareContactsEmptyCaption,
             trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
             onTap: () => context.push('/setting/contacts/add'),
           )
@@ -31,7 +34,7 @@ class ShareContactSection extends StatelessWidget {
               key: ValueKey(contacts[index].id),
               leading: InfoCardLeading.initial(contacts[index].name),
               title: contacts[index].name,
-              caption: contacts[index].relation,
+              caption: relationLabel(l10n, contacts[index].relation),
             ),
           ],
       ],

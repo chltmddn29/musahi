@@ -8,6 +8,7 @@ import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/region_manage_page.dart';
 import 'package:musahi/features/setting/repository/region_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class _Repository extends RegionRepository {
   _Repository({required this.fetch, required this.fetchNotifications});
@@ -148,6 +149,9 @@ void main() {
   testWidgets('searches SGIS, adds and removes mapped regions', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
         home: RegionManagePage(
           repository: _Repository(
             fetch: (_) async => [
@@ -188,7 +192,14 @@ void main() {
     InterestRegionStore.instance.add(
       RegionItem.fromJson({'cd': '11', 'addr_name': 'Seoul'}),
     );
-    await tester.pumpWidget(const MaterialApp(home: RegionManagePage()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('ko'),
+        home: RegionManagePage(),
+      ),
+    );
     expect(find.textContaining('삭제 후 다시 추가'), findsOneWidget);
     await tester.pumpAndSettle();
   });
@@ -197,6 +208,9 @@ void main() {
     var fail = true;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
         home: RegionManagePage(
           repository: _Repository(
             fetch: (_) async {
@@ -226,6 +240,9 @@ void main() {
     final response = Completer<List<RegionItem>>();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
         home: RegionManagePage(
           repository: _Repository(
             fetch: (_) => response.future,
@@ -250,6 +267,9 @@ void main() {
     final pending = <String?, List<Completer<List<RegionItem>>>>{};
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
         home: RegionManagePage(
           repository: _Repository(
             fetch: (cd) {

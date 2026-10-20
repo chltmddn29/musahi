@@ -4,6 +4,8 @@ import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
 import 'package:musahi/core/widgets/caption_text.dart';
 import 'package:musahi/core/widgets/info_card_leading.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 export 'caption_text.dart';
 export 'info_card_leading.dart';
@@ -191,7 +193,7 @@ class _SeverityBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        rating,
+        severityLabel(AppLocalizations.of(context), rating),
         style: AppTextStyles.label.copyWith(color: AppColors.surface),
       ),
     );

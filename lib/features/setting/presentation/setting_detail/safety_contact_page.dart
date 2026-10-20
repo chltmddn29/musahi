@@ -10,6 +10,8 @@ import 'package:musahi/core/widgets/custom_text_field.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 class SafetyContactPage extends StatefulWidget {
   const SafetyContactPage({super.key});
@@ -56,8 +58,9 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '안전 연락처 관리', icon: true),
+      appBar: CustomAppBar(title: l10n.settingsContacts, icon: true),
       child: Column(
         children: [
           SizedBox(height: MediaQuery.of(context).size.height * 0.03),
@@ -66,6 +69,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
             child: CategorySelector(
               categories: _categories,
               selectedCategory: _selectedCategory,
+              labelOf: (relation) => relationLabel(l10n, relation),
               onCategorySelected: (cat) =>
                   setState(() => _selectedCategory = cat),
               height: 40,
@@ -75,7 +79,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
           SizedBox(height: MediaQuery.of(context).size.height * 0.03),
           CustomTextField(
             controller: _searchController,
-            hintText: '연락처를 입력하세요',
+            hintText: l10n.contactSearchHint,
             prefixIcon: const Icon(Icons.search),
           ),
           const SizedBox(height: 20),
@@ -87,7 +91,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                 if (filtered.isEmpty) {
                   return Center(
                     child: Text(
-                      '등록된 연락처가 없습니다',
+                      l10n.contactsEmpty,
                       style: AppTextStyles.label.copyWith(
                         color: AppColors.muted,
                       ),
@@ -102,12 +106,13 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                           flat: true,
                           leading: InfoCardLeading.initial(contact.name),
                           title: contact.name,
-                          caption: '${contact.relation} · ${contact.phone}',
+                          caption:
+                              '${relationLabel(l10n, contact.relation)} · ${contact.phone}',
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                tooltip: '${contact.name} 수정',
+                                tooltip: l10n.editTooltip(contact.name),
                                 onPressed: () => context.push(
                                   '/setting/contacts/add',
                                   extra: contact,
@@ -122,7 +127,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
                               ),
                               const SizedBox(width: 12),
                               IconButton(
-                                tooltip: '${contact.name} 삭제',
+                                tooltip: l10n.deleteTooltip(contact.name),
                                 onPressed: () =>
                                     SafetyContactStore.instance.remove(contact),
                                 icon: const Icon(
@@ -147,7 +152,7 @@ class _SafetyContactPageState extends State<SafetyContactPage> {
             width: double.infinity,
             child: CustomElevatedButton(
               onPressed: () => context.push('/setting/contacts/add'),
-              child: '연락처 추가',
+              child: l10n.contactAdd,
             ),
           ),
           const SizedBox(height: 20),

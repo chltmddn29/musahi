@@ -6,6 +6,7 @@ import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/core/widgets/osm_map.dart';
 import 'package:musahi/features/disaster/model/disaster_area.dart';
 import 'package:musahi/features/disaster/repository/disaster_area_repository.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 재난문자 수신지역을 반투명 원과 경고 마커로 표시하는 지도.
 class DisasterAreaMap extends StatefulWidget {
@@ -48,8 +49,10 @@ class _DisasterAreaMapState extends State<DisasterAreaMap> {
             }
             final areas = snapshot.data ?? const [];
             if (areas.isEmpty) {
-              return const _MapPlaceholder(
-                child: CaptionText('재난 지역 위치를 표시할 수 없습니다.'),
+              return _MapPlaceholder(
+                child: CaptionText(
+                  AppLocalizations.of(context).disasterAreaUnavailable,
+                ),
               );
             }
             return _buildMap(areas);

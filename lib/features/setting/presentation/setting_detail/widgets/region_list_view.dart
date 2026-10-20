@@ -2,20 +2,21 @@ part of '../region_manage_page.dart';
 
 extension _RegionListView on _RegionManagePageState {
   Widget _buildListView() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 20),
-        const Text('관심지역을 관리하세요', style: AppTextStyles.titleMedium),
+        Text(l10n.regionListTitle, style: AppTextStyles.titleMedium),
         const SizedBox(height: 5),
         Text(
-          '재난 알림을 받을 지역을 추가하거나 삭제하세요',
+          l10n.regionListSubtitle,
           style: AppTextStyles.label.copyWith(color: AppColors.muted),
         ),
-        if (_selectionError != null) ...[
+        if (_codeNotFound) ...[
           const SizedBox(height: 5),
           Text(
-            _selectionError!,
+            l10n.regionCodeNotFound,
             style: AppTextStyles.label.copyWith(color: AppColors.muted),
           ),
         ],
@@ -28,7 +29,7 @@ extension _RegionListView on _RegionManagePageState {
               if (regions.isEmpty) {
                 return Center(
                   child: Text(
-                    '등록된 관심지역이 없습니다',
+                    l10n.regionListEmpty,
                     style: AppTextStyles.label.copyWith(color: AppColors.muted),
                   ),
                 );
@@ -41,7 +42,7 @@ extension _RegionListView on _RegionManagePageState {
                       for (final region in regions)
                         InfoCard.settingsTile(
                           label: region.notificationCode == null
-                              ? '${region.displayName}\n자동 전환하지 못했습니다. 삭제 후 다시 추가해주세요'
+                              ? l10n.regionMigrationFailed(region.displayName)
                               : region.displayName,
                           onTap: region.cd == primaryCd
                               ? null
@@ -64,7 +65,7 @@ extension _RegionListView on _RegionManagePageState {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    '대표',
+                                    l10n.regionPrimary,
                                     style: AppTextStyles.label.copyWith(
                                       color: AppColors.primary,
                                     ),
@@ -76,7 +77,7 @@ extension _RegionListView on _RegionManagePageState {
                                 onPressed: () {
                                   InterestRegionStore.instance.remove(region);
                                 },
-                                tooltip: '${region.displayName} 삭제',
+                                tooltip: l10n.deleteTooltip(region.displayName),
                                 icon: const Icon(
                                   Icons.close,
                                   size: 20,
@@ -103,7 +104,7 @@ extension _RegionListView on _RegionManagePageState {
           width: double.infinity,
           child: CustomElevatedButton(
             onPressed: _startAdding,
-            child: '관심지역 추가',
+            child: l10n.regionAdd,
           ),
         ),
         const SizedBox(height: 20),

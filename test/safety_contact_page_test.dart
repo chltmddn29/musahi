@@ -5,6 +5,7 @@ import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/safety_contact_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 final _contacts = [
   SafetyContact(id: '1', name: '김민수', phone: '010-1234-5678', relation: '가족'),
@@ -44,6 +45,9 @@ Future<void> _pumpContacts(
 
   await tester.pumpWidget(
     MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('ko'),
       routerConfig: router,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(

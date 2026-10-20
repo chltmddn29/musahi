@@ -6,6 +6,8 @@ import 'package:musahi/core/widgets/custom_app_bar.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/disaster/model/disaster_message.dart';
 import 'package:musahi/features/disaster/repository/disaster_repository.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 class InfoPage extends StatefulWidget {
   const InfoPage({super.key});
@@ -34,8 +36,9 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '재난 정보', icon: false),
+      appBar: CustomAppBar(title: l10n.infoTitle, icon: false),
       child: Column(
         children: [
           const SizedBox(height: 30),
@@ -44,6 +47,7 @@ class _InfoPageState extends State<InfoPage> {
             child: CategorySelector(
               categories: category,
               selectedCategory: selectedCategory,
+              labelOf: (category) => disasterCategoryLabel(l10n, category),
               onCategorySelected: (cat) =>
                   setState(() => selectedCategory = cat),
               pinFirst: true,
@@ -55,7 +59,7 @@ class _InfoPageState extends State<InfoPage> {
               stream: _messages,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(child: Text('오류가 발생했습니다: ${snapshot.error}'));
+                  return Center(child: Text(l10n.infoLoadFailed));
                 }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -77,7 +81,7 @@ class _InfoPageState extends State<InfoPage> {
                         .toList(),
                 };
                 if (items.isEmpty) {
-                  return const Center(child: Text('해당 카테고리의 정보가 없습니다.'));
+                  return Center(child: Text(l10n.infoEmpty));
                 }
                 return ListView.separated(
                   itemBuilder: (context, idx) {

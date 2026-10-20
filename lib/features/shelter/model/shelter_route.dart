@@ -5,17 +5,15 @@ typedef RouteTarget = ({Coordinate origin, Shelter destination});
 
 enum TurnDirection { straight, left, right }
 
-/// 다음 안내 지점. [description]은 경로 API가 내려주는 안내 문구.
+/// 다음 안내 지점. [description]은 경로 API가 내려주는 안내 문구이고,
+/// null이면 화면에서 대피소 방향 안내 문구를 보여준다.
 class RouteStep {
   final TurnDirection direction;
-  final String description;
+  final String? description;
 
-  const RouteStep({required this.direction, required this.description});
+  const RouteStep({required this.direction, this.description});
 
-  static const headToShelter = RouteStep(
-    direction: TurnDirection.straight,
-    description: '대피소 방향으로 이동하세요',
-  );
+  static const headToShelter = RouteStep(direction: TurnDirection.straight);
 
   factory RouteStep.fromJson(Map<String, dynamic> json) {
     final description = (json['description'] as String?)?.trim();
@@ -25,7 +23,7 @@ class RouteStep {
           TurnDirection.straight,
       // 경로 API가 안내 문구를 비워 주면 대피소 방향 안내로 대신한다.
       description: description == null || description.isEmpty
-          ? headToShelter.description
+          ? null
           : description,
     );
   }

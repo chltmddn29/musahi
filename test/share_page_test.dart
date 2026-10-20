@@ -6,6 +6,7 @@ import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/share_page.dart';
 import 'package:musahi/features/share/widgets/share_message_editor.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 const _shareLabel = '저는 안전합니다 (공유하기)';
 const _defaultMessage = '저는 지금 안전합니다. 걱정하지 마세요.';
@@ -15,20 +16,15 @@ final _contacts = [
   SafetyContact(id: '2', name: '이영희', phone: '010-9876-5432', relation: '지인'),
 ];
 
-Future<GoRouter> _pumpShare(
-  WidgetTester tester, {
-  double textScale = 1,
-}) async {
+Future<GoRouter> _pumpShare(WidgetTester tester, {double textScale = 1}) async {
   final rootKey = GlobalKey<NavigatorState>();
   final router = GoRouter(
     navigatorKey: rootKey,
     initialLocation: '/share',
     routes: [
       ShellRoute(
-        builder: (_, _, child) => Scaffold(
-          body: child,
-          bottomNavigationBar: const Text('하단 탭'),
-        ),
+        builder: (_, _, child) =>
+            Scaffold(body: child, bottomNavigationBar: const Text('하단 탭')),
         routes: [
           GoRoute(
             path: '/share',
@@ -58,11 +54,14 @@ Future<GoRouter> _pumpShare(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('ko'),
       routerConfig: router,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          textScaler: TextScaler.linear(textScale),
-        ),
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
     ),
@@ -140,35 +139,36 @@ void main() {
     expect(find.text('저장하지 않은 메시지'), findsNothing);
   });
 
-  testWidgets('preview hides tabs, prevents duplicate pushes and returns home', (
-    tester,
-  ) async {
-    final router = await _pumpShare(tester);
-    await tester.tap(find.text(_shareLabel));
-    await tester.tap(find.text(_shareLabel));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'preview hides tabs, prevents duplicate pushes and returns home',
+    (tester) async {
+      final router = await _pumpShare(tester);
+      await tester.tap(find.text(_shareLabel));
+      await tester.tap(find.text(_shareLabel));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(ShareCompletePage), findsOneWidget);
-    expect(find.text('미리보기 완료'), findsOneWidget);
-    expect(find.text('전송 완료'), findsNothing);
-    expect(find.byIcon(Icons.check_circle_outline), findsNothing);
-    expect(find.textContaining('실제 메시지는 전송되지 않았습니다.'), findsOneWidget);
-    expect(find.textContaining('미리보기 대상'), findsOneWidget);
-    expect(find.textContaining('김민수, 이영희'), findsOneWidget);
-    expect(find.textContaining('오늘 '), findsOneWidget);
-    expect(find.text('하단 탭'), findsNothing);
+      expect(find.byType(ShareCompletePage), findsOneWidget);
+      expect(find.text('미리보기 완료'), findsOneWidget);
+      expect(find.text('전송 완료'), findsNothing);
+      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.textContaining('실제 메시지는 전송되지 않았습니다.'), findsOneWidget);
+      expect(find.textContaining('미리보기 대상'), findsOneWidget);
+      expect(find.textContaining('김민수, 이영희'), findsOneWidget);
+      expect(find.textContaining('오늘 '), findsOneWidget);
+      expect(find.text('하단 탭'), findsNothing);
 
-    router.pop();
-    await tester.pumpAndSettle();
-    expect(find.byType(ShareCompletePage), findsNothing);
-    expect(find.text('하단 탭'), findsOneWidget);
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(ShareCompletePage), findsNothing);
+      expect(find.text('하단 탭'), findsOneWidget);
 
-    await tester.tap(find.text(_shareLabel));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('홈으로 돌아가기'));
-    await tester.pumpAndSettle();
-    expect(find.text('홈 화면'), findsOneWidget);
-  });
+      await tester.tap(find.text(_shareLabel));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('홈으로 돌아가기'));
+      await tester.pumpAndSettle();
+      expect(find.text('홈 화면'), findsOneWidget);
+    },
+  );
 
   testWidgets('direct completion navigation does not claim a successful send', (
     tester,

@@ -13,14 +13,17 @@ import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/presentation/setting_detail/text_size_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/settings/language_settings.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '설정', icon: false),
+      appBar: CustomAppBar(title: l10n.settingsTitle, icon: false),
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
@@ -35,7 +38,7 @@ class SettingPage extends StatelessWidget {
                 SettingMenuTile(
                   menuItem: SettingMenuItem(
                     icon: Icons.notifications,
-                    title: '재난문자 알림',
+                    title: l10n.settingsDisasterAlert,
                     isSwitch: true,
                     switchValue: disasterAlertEnabled.value,
                     onSwitchChanged: setDisasterAlertEnabled,
@@ -44,7 +47,7 @@ class SettingPage extends StatelessWidget {
                 SettingMenuTile(
                   menuItem: SettingMenuItem(
                     icon: Icons.check_circle_outline,
-                    title: '안전 안내 알림',
+                    title: l10n.settingsSafetyAlert,
                     isSwitch: true,
                     switchValue: safetyGuideAlertEnabled.value,
                     onSwitchChanged: setSafetyGuideAlertEnabled,
@@ -56,6 +59,7 @@ class SettingPage extends StatelessWidget {
           const SizedBox(height: 40),
           ListenableBuilder(
             listenable: Listenable.merge([
+              currentLanguage,
               textSizeStep,
               InterestRegionStore.instance.regions,
               InterestRegionStore.instance.primaryCd,
@@ -64,6 +68,7 @@ class SettingPage extends StatelessWidget {
             builder: (context, _) => SettingsGroup(
               children: _navItems(
                 context,
+                l10n,
                 textSizeStepValue: textSizeStep.value,
                 regions: InterestRegionStore.instance.regions.value,
                 primaryCd: InterestRegionStore.instance.primaryCd.value,
@@ -77,7 +82,8 @@ class SettingPage extends StatelessWidget {
   }
 
   List<SettingMenuItem> _navItems(
-    BuildContext context, {
+    BuildContext context,
+    AppLocalizations l10n, {
     required int textSizeStepValue,
     required List<RegionItem> regions,
     required String? primaryCd,
@@ -86,44 +92,50 @@ class SettingPage extends StatelessWidget {
     return [
       SettingMenuItem(
         icon: Icons.language,
-        title: '언어 설정',
-        subTitle: '한국어',
+        title: l10n.settingsLanguage,
+        subTitle: currentLanguage.value.label,
         onPressed: () => context.push('/setting/language'),
       ),
       SettingMenuItem(
         icon: Icons.map,
-        title: '관심지역 관리',
-        subTitle: _regionSubtitle(regions, primaryCd),
+        title: l10n.settingsRegions,
+        subTitle: _regionSubtitle(l10n, regions, primaryCd),
         onPressed: () => context.push('/setting/region'),
       ),
       SettingMenuItem(
         icon: Icons.people,
-        title: '안전 연락처 관리',
-        subTitle: _contactSubtitle(contacts),
+        title: l10n.settingsContacts,
+        subTitle: _contactSubtitle(l10n, contacts),
         onPressed: () => context.push('/setting/contacts'),
       ),
       SettingMenuItem(
         icon: Icons.text_fields,
-        title: '텍스트 크기 조절',
-        subTitle: TextSizePage.stepLabels[textSizeStepValue],
+        title: l10n.settingsTextSize,
+        subTitle: TextSizePage.stepLabels(l10n)[textSizeStepValue],
         onPressed: () => context.push('/setting/text-size'),
       ),
     ];
   }
 
-  String _regionSubtitle(List<RegionItem> regions, String? primaryCd) {
-    if (regions.isEmpty) return '설정 필요';
+  String _regionSubtitle(
+    AppLocalizations l10n,
+    List<RegionItem> regions,
+    String? primaryCd,
+  ) {
+    if (regions.isEmpty) return l10n.settingsNeedsSetup;
     final primary = regions.firstWhere(
       (r) => r.cd == primaryCd,
       orElse: () => regions.first,
     );
     final extraCount = regions.length - 1;
     return extraCount > 0
-        ? '${primary.addrName} 외 $extraCount곳'
+        ? l10n.settingsRegionSummary(primary.addrName, extraCount)
         : primary.addrName;
   }
 
-  String _contactSubtitle(List<SafetyContact> contacts) {
-    return contacts.isEmpty ? '설정 필요' : '${contacts.length}명';
+  String _contactSubtitle(AppLocalizations l10n, List<SafetyContact> contacts) {
+    return contacts.isEmpty
+        ? l10n.settingsNeedsSetup
+        : l10n.settingsContactCount(contacts.length);
   }
 }

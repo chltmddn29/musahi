@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:musahi/core/constants/color.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class CustomBottomNavigatorBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -18,6 +19,7 @@ class CustomBottomNavigatorBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
@@ -33,21 +35,27 @@ class CustomBottomNavigatorBar extends StatelessWidget {
         unselectedIconTheme: _navIconTheme,
         currentIndex: navigationShell.currentIndex,
         onTap: _onTap,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            label: '알림',
+            icon: const Icon(Icons.notifications_outlined),
+            label: l10n.navAlerts,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.location_on_outlined),
-            label: '위치',
+            icon: const Icon(Icons.location_on_outlined),
+            label: l10n.navLocation,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: '행동요령'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.share_outlined),
-            label: '공유',
+            icon: const Icon(Icons.list),
+            label: l10n.navGuide,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.share_outlined),
+            label: l10n.navShare,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.settings),
+            label: l10n.navSettings,
+          ),
         ],
       ),
     );

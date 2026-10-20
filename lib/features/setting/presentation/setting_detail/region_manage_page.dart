@@ -10,6 +10,7 @@ import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/setting/model/region_model.dart';
 import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/repository/region_repository.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 part 'widgets/region_list_view.dart';
 part 'widgets/region_search_view.dart';
@@ -33,9 +34,9 @@ class _RegionManagePageState extends State<RegionManagePage> {
   List<RegionItem> _notificationRegions = [];
   final List<RegionItem> _selectionPath = [];
   RegionItem? _selectedRegion;
-  String? _selectionError;
+  bool _codeNotFound = false;
   bool _isLoading = false;
-  String? _errorMessage;
+  bool _loadFailed = false;
 
   /// 가장 최근 [_loadRegions] 호출 번호. 이전 단계의 늦은 응답을 버리는 데 쓴다.
   int _loadRequestId = 0;
@@ -67,7 +68,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
     final requestId = ++_loadRequestId;
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _loadFailed = false;
     });
     try {
       final results = await Future.wait([
@@ -89,7 +90,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
     debugPrint('지역 조회 에러: $error');
     if (!mounted || !_isAdding || requestId != _loadRequestId) return;
     setState(() {
-      _errorMessage = '지역 정보를 불러오지 못했습니다';
+      _loadFailed = true;
       _isLoading = false;
     });
   }
@@ -98,11 +99,11 @@ class _RegionManagePageState extends State<RegionManagePage> {
     setState(() {
       _isAdding = true;
       _selectedRegion = null;
-      _selectionError = null;
+      _codeNotFound = false;
       _selectionPath.clear();
       _notificationRegions = [];
       _regions = [];
-      _errorMessage = null;
+      _loadFailed = false;
       _textEditingController.clear();
     });
     _loadRegions();
@@ -112,11 +113,11 @@ class _RegionManagePageState extends State<RegionManagePage> {
     setState(() {
       _isAdding = false;
       _selectedRegion = null;
-      _selectionError = null;
+      _codeNotFound = false;
       _selectionPath.clear();
       _notificationRegions = [];
       _regions = [];
-      _errorMessage = null;
+      _loadFailed = false;
       _textEditingController.clear();
     });
   }
@@ -131,7 +132,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
     setState(() {
       _selectionPath.add(region);
       _selectedRegion = null;
-      _selectionError = null;
+      _codeNotFound = false;
     });
     if (region.cd.length < 8) {
       _loadRegions(cd: region.cd);
@@ -144,7 +145,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
     _textEditingController.clear();
     setState(() {
       _selectionPath.add(region);
-      _selectionError = null;
+      _codeNotFound = false;
     });
     _selectRegion(region);
   }
@@ -158,9 +159,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
       _selectedRegion = notificationCode == null
           ? null
           : region.withNotificationCode(notificationCode);
-      _selectionError = notificationCode == null
-          ? '선택한 지역의 재난문자 수신지역 코드를 찾지 못했습니다.'
-          : null;
+      _codeNotFound = notificationCode == null;
     });
   }
 
@@ -172,7 +171,7 @@ class _RegionManagePageState extends State<RegionManagePage> {
     setState(() {
       _selectionPath.removeLast();
       _selectedRegion = null;
-      _selectionError = null;
+      _codeNotFound = false;
     });
     _loadRegions(cd: _selectionPath.isEmpty ? null : _selectionPath.last.cd);
   }
@@ -180,7 +179,10 @@ class _RegionManagePageState extends State<RegionManagePage> {
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '관심지역 관리', icon: true),
+      appBar: CustomAppBar(
+        title: AppLocalizations.of(context).settingsRegions,
+        icon: true,
+      ),
       child: _isAdding ? _buildSearchView() : _buildListView(),
     );
   }

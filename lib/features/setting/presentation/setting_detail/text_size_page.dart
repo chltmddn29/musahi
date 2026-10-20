@@ -4,12 +4,18 @@ import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/core/widgets/base_scaffold.dart';
 import 'package:musahi/core/widgets/custom_app_bar.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class TextSizePage extends StatefulWidget {
   const TextSizePage({super.key, this.initialStep = 1, this.onChanged});
 
   /// 단계별 라벨. 인덱스가 곧 단계 값이다.
-  static const List<String> stepLabels = textSizeStepLabels;
+  static List<String> stepLabels(AppLocalizations l10n) => [
+    l10n.textSizeSmall,
+    l10n.textSizeNormal,
+    l10n.textSizeLarge,
+    l10n.textSizeExtraLarge,
+  ];
 
   /// 단계별 실제 폰트 크기(sp). [stepLabels]와 인덱스가 대응된다.
   static const List<double> fontSizes = textSizeStepFontSizes;
@@ -23,7 +29,6 @@ class TextSizePage extends StatefulWidget {
 }
 
 class _TextSizePageState extends State<TextSizePage> {
-  static const List<String> _labels = TextSizePage.stepLabels;
   static const List<double> _fontSizes = TextSizePage.fontSizes;
 
   late int _stepIndex;
@@ -31,7 +36,7 @@ class _TextSizePageState extends State<TextSizePage> {
   @override
   void initState() {
     super.initState();
-    _stepIndex = widget.initialStep.clamp(0, _labels.length - 1);
+    _stepIndex = widget.initialStep.clamp(0, _fontSizes.length - 1);
   }
 
   double get _currentFontSize => _fontSizes[_stepIndex];
@@ -45,8 +50,10 @@ class _TextSizePageState extends State<TextSizePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = TextSizePage.stepLabels(l10n);
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '텍스트 크기 조절', icon: true),
+      appBar: CustomAppBar(title: l10n.settingsTextSize, icon: true),
       child: Padding(
         padding: const EdgeInsets.only(top: 24),
         child: Column(
@@ -67,7 +74,7 @@ class _TextSizePageState extends State<TextSizePage> {
                   fontWeight: FontWeight.w700,
                   color: AppColors.text,
                 ),
-                child: const Text('재난 문자 예시입니다'),
+                child: Text(l10n.textSizeSample),
               ),
             ),
             const SizedBox(height: 32),
@@ -86,8 +93,8 @@ class _TextSizePageState extends State<TextSizePage> {
               child: Slider(
                 value: _stepIndex.toDouble(),
                 min: 0,
-                max: (_labels.length - 1).toDouble(),
-                divisions: _labels.length - 1,
+                max: (labels.length - 1).toDouble(),
+                divisions: labels.length - 1,
                 onChanged: _onSliderChanged,
               ),
             ),
@@ -95,17 +102,15 @@ class _TextSizePageState extends State<TextSizePage> {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(_labels.length, (index) {
+                children: List.generate(labels.length, (index) {
                   final isSelected = index == _stepIndex;
                   return Text(
-                    _labels[index],
+                    labels[index],
                     style: AppTextStyles.label.copyWith(
                       fontWeight: isSelected
                           ? FontWeight.w700
                           : FontWeight.w400,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.muted,
+                      color: isSelected ? AppColors.primary : AppColors.muted,
                     ),
                   );
                 }),

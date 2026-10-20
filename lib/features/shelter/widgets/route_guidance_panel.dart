@@ -4,6 +4,7 @@ import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/shelter/model/shelter_route.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 하단 안내 패널: 다음 안내 지점 + 목적지까지 거리 + 안내 종료 버튼.
 class RouteGuidancePanel extends StatelessWidget {
@@ -28,6 +29,7 @@ class RouteGuidancePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -56,12 +58,15 @@ class RouteGuidancePanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        nextStep.description,
+                        nextStep.description ?? l10n.routeHeadToShelter,
                         style: AppTextStyles.cardTitle,
                       ),
                       const SizedBox(height: 2),
                       CaptionText(
-                        '$destinationName까지 ${formatDistance(remainingMeters)}',
+                        l10n.routeDistanceTo(
+                          destinationName,
+                          formatDistance(remainingMeters),
+                        ),
                       ),
                     ],
                   ),
@@ -83,7 +88,7 @@ class RouteGuidancePanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: const Text('안내 종료'),
+              child: Text(l10n.routeEnd),
             ),
           ],
         ),

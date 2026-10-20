@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// "[title] N곳" 헤더와 대피소 카드 목록. 카드를 누르면 [onSelect]로 알리고,
 /// 지도 등 밖에서 선택이 바뀌면 선택된 카드가 보이도록 스크롤한다.
@@ -108,7 +109,7 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
-        CaptionText('$count곳'),
+        CaptionText(AppLocalizations.of(context).shelterCount(count)),
       ],
     );
   }

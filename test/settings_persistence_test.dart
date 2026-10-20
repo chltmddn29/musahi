@@ -50,15 +50,15 @@ void main() {
     await loadLanguageSetting();
     expect(currentLanguage.value, AppLanguage.korean);
 
-    await setLanguage(AppLanguage.korean);
+    await setLanguage(AppLanguage.english);
 
     currentLanguage.value = AppLanguage.korean; // simulate app restart
     await loadLanguageSetting();
-    expect(currentLanguage.value, AppLanguage.korean);
+    expect(currentLanguage.value, AppLanguage.english);
   });
 
   test('unsupported saved language falls back to Korean', () async {
-    for (final saved in [AppLanguage.english, AppLanguage.japanese]) {
+    for (final saved in [AppLanguage.chinese, AppLanguage.japanese]) {
       SharedPreferences.setMockInitialValues({'app_language': saved.name});
       currentLanguage.value = saved;
       await loadLanguageSetting();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/info_card.dart';
 import 'package:musahi/features/guide/model/disaster_guide.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 번호 카드로 나열한 행동요령 + 하단 "가까운 대피소 보기" 버튼.
 /// 탭 화면([GuidePage])과 상세 화면([GuideDetailPage])이 함께 쓴다.
@@ -17,6 +18,7 @@ class GuideStepList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Expanded(
@@ -28,8 +30,8 @@ class GuideStepList extends StatelessWidget {
               final step = guide.steps[index];
               return InfoCard(
                 leading: InfoCardLeading.number(index + 1),
-                title: step.title,
-                caption: step.description,
+                title: l10n.guideStepTitle(step.id),
+                caption: l10n.guideStepDescription(step.id),
                 crossAxisAlignment: CrossAxisAlignment.start,
               );
             },
@@ -41,7 +43,7 @@ class GuideStepList extends StatelessWidget {
             width: double.infinity,
             child: CustomElevatedButton(
               onPressed: onShelterPressed,
-              child: '가까운 대피소 보기',
+              child: l10n.guideShowNearbyShelters,
             ),
           ),
           const SizedBox(height: 12),

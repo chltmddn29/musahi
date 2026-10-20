@@ -7,6 +7,7 @@ import 'package:musahi/features/shelter/widgets/route_guidance_panel.dart';
 import 'package:musahi/features/shelter/widgets/shelter_error_view.dart';
 import 'package:musahi/features/shelter/widgets/route_summary_chip.dart';
 import 'package:musahi/features/shelter/widgets/shelter_map.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class ShelterRoutePage extends StatefulWidget {
   final RouteTarget target;
@@ -44,7 +45,7 @@ class _ShelterRoutePageState extends State<ShelterRoutePage> {
           }
           if (snapshot.hasError || !snapshot.hasData) {
             return ShelterErrorView(
-              message: '경로를 불러오지 못했습니다.',
+              message: AppLocalizations.of(context).routeLoadFailed,
               onRetry: _retry,
             );
           }

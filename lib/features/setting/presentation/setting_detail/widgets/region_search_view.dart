@@ -2,16 +2,17 @@ part of '../region_manage_page.dart';
 
 extension _RegionSearchView on _RegionManagePageState {
   Widget _buildSearchView() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 20),
-        const Text('관심지역을 설정해주세요', style: AppTextStyles.titleMedium),
+        Text(l10n.regionSearchTitle, style: AppTextStyles.titleMedium),
         const SizedBox(height: 5),
         Text(
           _selectedRegion == null
-              ? '재난 알림을 받을 지역을 선택하세요'
-              : '${_selectedRegion!.displayName}(으)로 선택됨',
+              ? l10n.regionSearchSubtitle
+              : l10n.regionSelected(_selectedRegion!.displayName),
           style: AppTextStyles.label.copyWith(color: AppColors.muted),
         ),
         const SizedBox(height: 20),
@@ -25,7 +26,7 @@ extension _RegionSearchView on _RegionManagePageState {
             Expanded(
               child: CustomTextField(
                 controller: _textEditingController,
-                hintText: '지역을 입력하세요',
+                hintText: l10n.regionSearchHint,
                 prefixIcon: const Icon(Icons.search),
               ),
             ),
@@ -35,19 +36,19 @@ extension _RegionSearchView on _RegionManagePageState {
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _errorMessage != null
+              : _loadFailed
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_errorMessage!),
+                      Text(l10n.regionLoadFailed),
                       TextButton(
                         onPressed: () => _loadRegions(
                           cd: _selectionPath.isEmpty
                               ? null
                               : _selectionPath.last.cd,
                         ),
-                        child: const Text('다시 시도'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -55,14 +56,16 @@ extension _RegionSearchView on _RegionManagePageState {
               : _selectedRegion != null
               ? Center(
                   child: Text(
-                    '${_selectedRegion!.displayName}(으)로 선택됨',
+                    l10n.regionSelected(_selectedRegion!.displayName),
                     style: AppTextStyles.label,
                   ),
                 )
               : _filteredRegions.isEmpty
               ? Center(
                   child: Text(
-                    _regions.isEmpty ? '하위 지역이 없습니다' : '검색 결과가 없습니다',
+                    _regions.isEmpty
+                        ? l10n.regionNoChildren
+                        : l10n.regionNoResults,
                     style: AppTextStyles.label,
                   ),
                 )
@@ -77,7 +80,7 @@ extension _RegionSearchView on _RegionManagePageState {
                         trailing: TextButton(
                           onPressed: () => _onPickHere(region),
                           child: Text(
-                            '선택',
+                            l10n.select,
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.primary,
                             ),
@@ -97,7 +100,7 @@ extension _RegionSearchView on _RegionManagePageState {
             Expanded(
               child: CustomElevatedButton(
                 onPressed: _selectedRegion == null ? null : _onComplete,
-                child: '추가',
+                child: l10n.add,
               ),
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 실제 전송 결과가 아닌, 완료 화면을 확인하기 위한 데이터 스냅샷.
 class SafetySharePreview {
@@ -20,17 +21,18 @@ class ShareCompletePage extends StatelessWidget {
 
   const ShareCompletePage({super.key, this.preview});
 
-  String _formatTime(DateTime time) {
+  String _formatTime(AppLocalizations l10n, DateTime time) {
     final localTime = time.toLocal();
     final now = DateTime.now();
     final isToday = DateUtils.isSameDay(localTime, now);
     return isToday
-        ? '오늘 ${DateFormat('HH:mm').format(localTime)}'
+        ? l10n.shareTodayAt(DateFormat('HH:mm').format(localTime))
         : DateFormat('yyyy.MM.dd HH:mm').format(localTime);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final data = preview;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,7 +45,10 @@ class ShareCompletePage extends StatelessWidget {
                 minHeight: constraints.maxHeight,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 24,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -54,7 +59,10 @@ class ShareCompletePage extends StatelessWidget {
                         height: 84,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary, width: 3),
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 3,
+                          ),
                         ),
                         child: const Icon(
                           Icons.info_outline,
@@ -63,14 +71,14 @@ class ShareCompletePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        '미리보기 완료',
+                      Text(
+                        l10n.sharePreviewDone,
                         style: AppTextStyles.titleMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '실제 메시지는 전송되지 않았습니다.',
+                        l10n.sharePreviewNotSent,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -78,14 +86,14 @@ class ShareCompletePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        '미리보기 대상: ${data.contactNames.join(', ')}\n'
-                        '${_formatTime(data.createdAt)}',
+                        '${l10n.sharePreviewTargets(data.contactNames.join(', '))}\n'
+                        '${_formatTime(l10n, data.createdAt)}',
                         style: AppTextStyles.captionMedium,
                         textAlign: TextAlign.center,
                       ),
                     ] else
-                      const Text(
-                        '공유 정보가 없습니다.',
+                      Text(
+                        l10n.shareNoData,
                         style: AppTextStyles.titleMedium,
                         textAlign: TextAlign.center,
                       ),
@@ -93,7 +101,7 @@ class ShareCompletePage extends StatelessWidget {
                     TextButton(
                       onPressed: () => context.go('/info'),
                       child: Text(
-                        '홈으로 돌아가기',
+                        l10n.shareBackHome,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontSize: 15,
@@ -112,4 +120,3 @@ class ShareCompletePage extends StatelessWidget {
     );
   }
 }
-

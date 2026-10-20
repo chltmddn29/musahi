@@ -10,6 +10,8 @@ import 'package:musahi/core/widgets/custom_elevated_button.dart';
 import 'package:musahi/core/widgets/custom_text_field.dart';
 import 'package:musahi/features/setting/model/safety_contact_model.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
+import 'package:musahi/l10n/app_localizations.dart';
+import 'package:musahi/core/l10n/data_labels.dart';
 
 class AddContactPage extends StatefulWidget {
   const AddContactPage({super.key, this.editing});
@@ -56,8 +58,13 @@ class _AddContactPageState extends State<AddContactPage> {
     } else {
       SafetyContactStore.instance.add(contact);
     }
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name 연락처를 ${_isEditing ? '수정' : '추가'}했습니다.')),
+      SnackBar(
+        content: Text(
+          _isEditing ? l10n.contactUpdated(name) : l10n.contactAdded(name),
+        ),
+      ),
     );
     context.pop();
   }
@@ -90,8 +97,12 @@ class _AddContactPageState extends State<AddContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      appBar: CustomAppBar(title: _isEditing ? '연락처 수정' : '연락처 추가', icon: true),
+      appBar: CustomAppBar(
+        title: _isEditing ? l10n.contactEdit : l10n.contactAdd,
+        icon: true,
+      ),
       child: ListenableBuilder(
         listenable: Listenable.merge([_nameController, _phoneController]),
         builder: (context, _) {
@@ -113,8 +124,8 @@ class _AddContactPageState extends State<AddContactPage> {
               children: [
                 const SizedBox(height: 20),
                 CustomTextField(
-                  label: '이름',
-                  hintText: '이름을 입력하세요',
+                  label: l10n.contactName,
+                  hintText: l10n.contactNameHint,
                   controller: _nameController,
                 ),
                 const SizedBox(height: 20),
@@ -122,7 +133,7 @@ class _AddContactPageState extends State<AddContactPage> {
                   inputFormatters: [
                     const TextInputFormatter.withFunction(_formatPhoneNumber),
                   ],
-                  label: '전화번호',
+                  label: l10n.contactPhone,
                   hintText: '010-0000-0000',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
@@ -131,18 +142,19 @@ class _AddContactPageState extends State<AddContactPage> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      '서울(02) 번호는 10자리까지입니다. 번호를 확인해 주세요.',
+                      l10n.contactSeoulTooLong,
                       style: AppTextStyles.label.copyWith(
                         color: AppColors.alertCritical,
                       ),
                     ),
                   ),
                 const SizedBox(height: 20),
-                const Text('관계', style: AppTextStyles.cardTitle),
+                Text(l10n.contactRelation, style: AppTextStyles.cardTitle),
                 const SizedBox(height: 10),
                 CategorySelector(
                   categories: _relations,
                   selectedCategory: _relation,
+                  labelOf: (relation) => relationLabel(l10n, relation),
                   onCategorySelected: (value) =>
                       setState(() => _relation = value),
                 ),
@@ -151,7 +163,7 @@ class _AddContactPageState extends State<AddContactPage> {
                   width: double.infinity,
                   child: CustomElevatedButton(
                     onPressed: canSubmit ? _submit : null,
-                    child: _isEditing ? '수정' : '추가',
+                    child: _isEditing ? l10n.edit : l10n.add,
                   ),
                 ),
                 const SizedBox(height: 20),

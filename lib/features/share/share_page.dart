@@ -11,6 +11,7 @@ import 'package:musahi/features/share/share_complete_page.dart';
 import 'package:musahi/features/share/widgets/share_message_editor.dart';
 import 'package:musahi/features/share/widgets/share_contact_section.dart';
 import 'package:musahi/features/share/widgets/share_message_section.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class SharePage extends StatefulWidget {
   const SharePage({super.key});
@@ -20,7 +21,8 @@ class SharePage extends StatefulWidget {
 }
 
 class _SharePageState extends State<SharePage> {
-  String _message = '저는 지금 안전합니다. 걱정하지 마세요.';
+  /// null이면 현재 언어의 기본 메시지를 쓴다.
+  String? _message;
   bool _isPreviewOpen = false;
 
   Future<void> _editMessage() async {
@@ -29,7 +31,10 @@ class _SharePageState extends State<SharePage> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppColors.background,
-      builder: (_) => ShareMessageEditor(initialMessage: _message),
+      builder: (_) => ShareMessageEditor(
+        initialMessage:
+            _message ?? AppLocalizations.of(context).shareDefaultMessage,
+      ),
     );
     if (!mounted || message == null) return;
     setState(() => _message = message);
@@ -53,8 +58,9 @@ class _SharePageState extends State<SharePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      appBar: const CustomAppBar(title: '안전 상태 공유', icon: false),
+      appBar: CustomAppBar(title: l10n.shareTitle, icon: false),
       child: ValueListenableBuilder<List<SafetyContact>>(
         valueListenable: SafetyContactStore.instance.contacts,
         builder: (context, contacts, _) => Column(
@@ -69,7 +75,7 @@ class _SharePageState extends State<SharePage> {
                     ShareContactSection(contacts: contacts),
                     const SizedBox(height: 24),
                     ShareMessageSection(
-                      message: _message,
+                      message: _message ?? l10n.shareDefaultMessage,
                       onEdit: _editMessage,
                     ),
                   ],
@@ -84,8 +90,8 @@ class _SharePageState extends State<SharePage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CaptionText(
-                      '현재는 미리보기이며 실제 메시지는 전송되지 않습니다.',
+                    CaptionText(
+                      l10n.sharePreviewNotice,
                       align: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -104,14 +110,14 @@ class _SharePageState extends State<SharePage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.share_outlined, size: 17),
-                          SizedBox(width: 8),
+                          const Icon(Icons.share_outlined, size: 17),
+                          const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              '저는 안전합니다 (공유하기)',
+                              l10n.shareButton,
                               textAlign: TextAlign.center,
                             ),
                           ),

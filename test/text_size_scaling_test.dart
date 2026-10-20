@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:musahi/core/settings/language_settings.dart';
 import 'package:musahi/core/settings/text_size_settings.dart';
 import 'package:musahi/main.dart';
 
@@ -20,7 +21,7 @@ void main() {
 
   test('preserves nonlinear platform scaling at every app size', () {
     const platform = _NonlinearScaler();
-    for (var step = 0; step < textSizeStepLabels.length; step++) {
+    for (var step = 0; step < textSizeStepFontSizes.length; step++) {
       final scaler = composeTextScaler(platform, step);
       for (final fontSize in [12.0, 24.0, 48.0]) {
         expect(
@@ -39,7 +40,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) {
-          final app = const MyApp().build(context) as MaterialApp;
+          final languageBuilder =
+              const MyApp().build(context)
+                  as ValueListenableBuilder<AppLanguage>;
+          final app =
+              languageBuilder.builder(context, currentLanguage.value, null)
+                  as MaterialApp;
           return app.builder!(context, child);
         },
         home: Builder(

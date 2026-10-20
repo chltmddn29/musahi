@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/widgets/custom_elevated_button.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class ShareMessageEditor extends StatefulWidget {
   final String initialMessage;
@@ -39,6 +40,7 @@ class _ShareMessageEditorState extends State<ShareMessageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
@@ -51,7 +53,7 @@ class _ShareMessageEditorState extends State<ShareMessageEditor> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('메시지 수정', style: AppTextStyles.titleMedium),
+                Text(l10n.shareEditMessage, style: AppTextStyles.titleMedium),
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _controller,
@@ -62,7 +64,7 @@ class _ShareMessageEditorState extends State<ShareMessageEditor> {
                   style: AppTextStyles.bodyMedium,
                   cursorColor: AppColors.primary,
                   decoration: InputDecoration(
-                    labelText: '안전 상태 메시지',
+                    labelText: l10n.shareMessageLabel,
                     alignLabelWithHint: true,
                     labelStyle: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.muted,
@@ -79,11 +81,11 @@ class _ShareMessageEditorState extends State<ShareMessageEditor> {
                     ),
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? '공유할 메시지를 입력해 주세요.'
+                      ? l10n.shareMessageEmpty
                       : null,
                 ),
                 const SizedBox(height: 16),
-                CustomElevatedButton(onPressed: _save, child: '저장'),
+                CustomElevatedButton(onPressed: _save, child: l10n.save),
               ],
             ),
           ),

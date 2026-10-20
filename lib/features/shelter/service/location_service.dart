@@ -4,14 +4,21 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:musahi/features/shelter/model/shelter.dart';
 
-/// 사용자에게 그대로 보여줄 수 있는 위치 오류.
-class LocationException implements Exception {
-  final String message;
+enum LocationError {
+  timeout,
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+}
 
-  const LocationException(this.message);
+/// 화면이 [error]에 맞는 안내 문구를 보여줄 수 있는 위치 오류.
+class LocationException implements Exception {
+  final LocationError error;
+
+  const LocationException(this.error);
 
   @override
-  String toString() => message;
+  String toString() => 'LocationException: ${error.name}';
 }
 
 class LocationService {
@@ -43,7 +50,7 @@ class LocationService {
       if (lastKnown != null && isRecent(lastKnown.timestamp, DateTime.now())) {
         return lastKnown;
       }
-      throw const LocationException('현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      throw const LocationException(LocationError.timeout);
     }
   }
 
@@ -54,7 +61,7 @@ class LocationService {
 
   Future<void> _ensurePermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
-      throw const LocationException('위치 서비스가 꺼져 있습니다. 설정에서 켜 주세요.');
+      throw const LocationException(LocationError.serviceDisabled);
     }
 
     var permission = await Geolocator.checkPermission();
@@ -64,9 +71,9 @@ class LocationService {
 
     switch (permission) {
       case LocationPermission.denied:
-        throw const LocationException('가까운 대피소를 찾으려면 위치 권한이 필요합니다.');
+        throw const LocationException(LocationError.permissionDenied);
       case LocationPermission.deniedForever:
-        throw const LocationException('설정에서 위치 권한을 허용해 주세요.');
+        throw const LocationException(LocationError.permissionDeniedForever);
       default:
         return;
     }

@@ -12,6 +12,7 @@ import 'package:musahi/features/setting/model/region_store.dart';
 import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/repository/region_repository.dart';
 import 'package:musahi/firebase_options.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +36,7 @@ void main() async {
 
 /// 관심지역 자동 전환 → 알림 초기화 순서를 지켜야 한다.
 /// [NotificationService]가 전환된 지역 코드 기준으로 토픽을 구독하기 때문.
-/// 실패는 각자 내부에서 잡아 [NotificationService.syncError]로 노출되고,
+/// 실패는 각자 내부에서 잡아 [NotificationService.syncFailed]로 노출되고,
 /// 설정 화면의 재시도 버튼으로 복구된다.
 Future<void> _initializeRemoteServices() async {
   await _migrateLegacyInterestRegions();
@@ -58,31 +59,37 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: goRouter,
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        splashColor: AppColors.surface,
-        fontFamily: 'Pretendard',
-        scaffoldBackgroundColor: AppColors.background,
-        progressIndicatorTheme: const ProgressIndicatorThemeData(
-          color: AppColors.primary,
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: currentLanguage,
+      builder: (context, language, _) => MaterialApp.router(
+        routerConfig: goRouter,
+        debugShowCheckedModeBanner: false,
+        locale: Locale(language.languageCode),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: ThemeData(
+          splashColor: AppColors.surface,
+          fontFamily: 'Pretendard',
+          scaffoldBackgroundColor: AppColors.background,
+          progressIndicatorTheme: const ProgressIndicatorThemeData(
+            color: AppColors.primary,
+          ),
         ),
+        builder: (context, child) {
+          return ValueListenableBuilder<int>(
+            valueListenable: textSizeStep,
+            builder: (context, step, _) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  textScaler: composeTextScaler(mediaQuery.textScaler, step),
+                ),
+                child: child!,
+              );
+            },
+          );
+        },
       ),
-      builder: (context, child) {
-        return ValueListenableBuilder<int>(
-          valueListenable: textSizeStep,
-          builder: (context, step, _) {
-            final mediaQuery = MediaQuery.of(context);
-            return MediaQuery(
-              data: mediaQuery.copyWith(
-                textScaler: composeTextScaler(mediaQuery.textScaler, step),
-              ),
-              child: child!,
-            );
-          },
-        );
-      },
     );
   }
 }

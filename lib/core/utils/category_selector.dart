@@ -12,6 +12,9 @@ class CategorySelector extends StatelessWidget {
   final List<String> categories;
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
+
+  /// 카테고리 값과 화면에 보일 문구가 다를 때 쓴다.
+  final String Function(String category)? labelOf;
   final bool pinFirst;
   final double height;
   final double spacing;
@@ -21,6 +24,7 @@ class CategorySelector extends StatelessWidget {
     required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
+    this.labelOf,
     this.pinFirst = false,
     this.height = 40,
     this.spacing = 15,
@@ -41,7 +45,7 @@ class CategorySelector extends StatelessWidget {
           borderColor: isSelected
               ? null
               : AppColors.primary.withValues(alpha: 0.25),
-          child: category,
+          child: labelOf?.call(category) ?? category,
         ),
       ),
     );

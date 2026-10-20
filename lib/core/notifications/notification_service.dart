@@ -14,7 +14,7 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 class NotificationService {
   const NotificationService._();
 
-  static final syncError = ValueNotifier<String?>(null);
+  static final syncFailed = ValueNotifier<bool>(false);
   static final _topicSync = NotificationTopicSync(
     subscribe: (topic) => FirebaseMessaging.instance.subscribeToTopic(topic),
     unsubscribe: (topic) =>
@@ -92,7 +92,7 @@ class NotificationService {
             ],
         },
       );
-      syncError.value = null;
+      syncFailed.value = false;
       debugPrint(
         '알림 설정 동기화 완료: 재난문자=${disasterAlertEnabled.value}, '
         '안전안내=${safetyGuideAlertEnabled.value}, '
@@ -107,7 +107,7 @@ class NotificationService {
 
   static void _reportFailure(Object error) {
     debugPrint('알림 설정 동기화 실패: $error');
-    syncError.value = '알림 설정을 서버에 반영하지 못했습니다. 연결 후 다시 시도해주세요.';
+    syncFailed.value = true;
   }
 
   /// iOS 실기기에서는 보통 곧바로 발급되지만, 시뮬레이터는 APNS를 지원하지
@@ -152,7 +152,10 @@ class NotificationService {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('확인', style: TextStyle(color: Colors.white)),
+                child: Text(
+                  MaterialLocalizations.of(context).okButtonLabel,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),

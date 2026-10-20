@@ -10,6 +10,7 @@ import 'package:musahi/features/shelter/widgets/nearby_shelter_list.dart';
 import 'package:musahi/features/shelter/widgets/route_start_button.dart';
 import 'package:musahi/features/shelter/widgets/shelter_error_view.dart';
 import 'package:musahi/features/shelter/widgets/shelter_map.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 class ShelterPage extends StatefulWidget {
   /// 재난문자에서 들어온 경우의 수신지역명. 없으면 하단 탭의 내 주변 대피소.
@@ -41,9 +42,17 @@ class _ShelterPageState extends State<ShelterPage> {
     });
   }
 
-  static String _errorMessage(Object? error) => error is LocationException
-      ? error.message
-      : '대피소 정보를 불러오지 못했습니다.\n네트워크 상태를 확인해 주세요.';
+  static String _errorMessage(AppLocalizations l10n, Object? error) =>
+      switch (error) {
+        LocationException(error: LocationError.timeout) => l10n.locationTimeout,
+        LocationException(error: LocationError.serviceDisabled) =>
+          l10n.locationServiceDisabled,
+        LocationException(error: LocationError.permissionDenied) =>
+          l10n.locationPermissionDenied,
+        LocationException(error: LocationError.permissionDeniedForever) =>
+          l10n.locationPermissionDeniedForever,
+        _ => l10n.shelterLoadFailed,
+      };
 
   void _select(Shelter shelter) => setState(() => _selectedId = shelter.id);
 
@@ -73,7 +82,10 @@ class _ShelterPageState extends State<ShelterPage> {
               }
               if (snapshot.hasError) {
                 return ShelterErrorView(
-                  message: _errorMessage(snapshot.error),
+                  message: _errorMessage(
+                    AppLocalizations.of(context),
+                    snapshot.error,
+                  ),
                   onRetry: _retry,
                 );
               }
@@ -96,6 +108,7 @@ class _ShelterPageState extends State<ShelterPage> {
     final (:currentLocation, :shelters, :mode) = result;
     final isNearby = mode == ShelterSearchMode.nearby;
     final selected = _selectedOf(shelters);
+    final l10n = AppLocalizations.of(context);
 
     return Stack(
       children: [
@@ -128,7 +141,9 @@ class _ShelterPageState extends State<ShelterPage> {
               children: [
                 Expanded(
                   child: NearbyShelterList(
-                    title: isNearby ? '가까운 대피소' : '재난 지역 대피소',
+                    title: isNearby
+                        ? l10n.nearbyShelters
+                        : l10n.disasterAreaShelters,
                     shelters: shelters,
                     selected: selected,
                     onSelect: _select,
@@ -142,8 +157,8 @@ class _ShelterPageState extends State<ShelterPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (!isNearby) ...[
-                        const CaptionText(
-                          '현재 위치가 재난 지역 밖이라 지역 안의 대피소를 보여줍니다.',
+                        CaptionText(
+                          l10n.shelterOutsideArea,
                           align: TextAlign.center,
                         ),
                         const SizedBox(height: 8),

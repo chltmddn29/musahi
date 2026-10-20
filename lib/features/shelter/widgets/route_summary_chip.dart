@@ -3,6 +3,7 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
 import 'package:musahi/core/utils/format_duration.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// "도보 8분 · 550m 남음" 요약 칩.
 class RouteSummaryChip extends StatelessWidget {
@@ -19,6 +20,9 @@ class RouteSummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final distance = formatDistance(remainingMeters);
+    final duration = formatDuration(l10n, remainingTime);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
       decoration: BoxDecoration(
@@ -34,8 +38,8 @@ class RouteSummaryChip extends StatelessWidget {
       ),
       child: Text(
         isEstimated
-            ? '직선 약 ${formatDistance(remainingMeters)} · 도보 ${formatDuration(remainingTime)} (추정)'
-            : '도보 ${formatDuration(remainingTime)} · ${formatDistance(remainingMeters)} 남음',
+            ? l10n.routeSummaryEstimated(distance, duration)
+            : l10n.routeSummary(duration, distance),
         style: AppTextStyles.label.copyWith(
           color: AppColors.text,
           fontSize: 13.5,

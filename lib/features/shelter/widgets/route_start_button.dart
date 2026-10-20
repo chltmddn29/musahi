@@ -3,6 +3,7 @@ import 'package:musahi/core/constants/color.dart';
 import 'package:musahi/core/constants/font.dart';
 import 'package:musahi/core/utils/format_distance.dart';
 import 'package:musahi/core/widgets/info_card.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 /// 경로 안내 시작 버튼. 도보 거리를 넘는 대피소는 한 번 더 눌러야 시작한다.
 /// 대피소가 바뀌면 확인 상태를 초기화하도록 대피소 id를 key로 넘긴다.
@@ -39,14 +40,14 @@ class _RouteStartButtonState extends State<RouteStartButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_awaitingConfirm) ...[
           CaptionText(
-            '도보로 가기엔 먼 거리입니다(${formatDistance(widget.distanceMeters!)}). '
-            '한 번 더 누르면 경로 안내를 시작합니다.',
+            l10n.routeFarWarning(formatDistance(widget.distanceMeters!)),
             align: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -54,7 +55,9 @@ class _RouteStartButtonState extends State<RouteStartButton> {
         ElevatedButton.icon(
           onPressed: widget.onPressed == null ? null : _handlePressed,
           icon: const Icon(Icons.navigation, size: 18),
-          label: Text(_awaitingConfirm ? '한 번 더 눌러 경로 안내 시작' : '경로 안내 시작'),
+          label: Text(
+            _awaitingConfirm ? l10n.routeStartConfirm : l10n.routeStart,
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: _awaitingConfirm
                 ? AppColors.alertUrgent

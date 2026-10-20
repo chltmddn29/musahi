@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:musahi/features/guide/presentation/guide_detail_page.dart';
 import 'package:musahi/features/guide/presentation/guide_page.dart';
 import 'package:musahi/features/guide/model/disaster_guide.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('탭에서 유형을 바꾸면 해당 행동요령을 보여준다', (tester) async {
@@ -14,16 +15,23 @@ void main() {
         GoRoute(path: '/shelter', builder: (_, _) => const Text('대피소 탭')),
       ],
     );
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
+        routerConfig: router,
+      ),
+    );
 
     expect(find.text('지진 행동요령'), findsOneWidget);
-    expect(find.text(DisasterGuide.earthquake.steps.first.title), findsOneWidget);
+    expect(find.text('탁자 아래로 몸을 보호하세요'), findsOneWidget);
     expect(find.text('가까운 대피소 보기'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(ElevatedButton, '호우'));
     await tester.pumpAndSettle();
     expect(find.text('호우 행동요령'), findsOneWidget);
-    expect(find.text(DisasterGuide.heavyRain.steps.first.title), findsOneWidget);
+    expect(find.text('기상 정보를 수시로 확인하세요'), findsOneWidget);
 
     await tester.tap(find.text('가까운 대피소 보기'));
     await tester.pumpAndSettle();
@@ -31,7 +39,14 @@ void main() {
   });
 
   testWidgets('폭염은 대피소 버튼을 숨긴다', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: GuidePage()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('ko'),
+        home: GuidePage(),
+      ),
+    );
 
     await tester.tap(find.widgetWithText(ElevatedButton, '폭염'));
     await tester.pumpAndSettle();
@@ -67,7 +82,14 @@ void main() {
         ),
       ],
     );
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('ko'),
+        routerConfig: router,
+      ),
+    );
     router.push('/guide');
     await tester.pumpAndSettle();
 

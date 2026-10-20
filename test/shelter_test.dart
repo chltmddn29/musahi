@@ -11,6 +11,7 @@ import 'package:musahi/features/shelter/service/location_service.dart';
 import 'package:musahi/features/shelter/widgets/nearby_shelter_list.dart';
 import 'package:musahi/features/shelter/widgets/route_start_button.dart';
 import 'package:musahi/features/shelter/widgets/route_summary_chip.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 Shelter _shelter(String id, {int distance = 100}) => Shelter(
   id: id,
@@ -33,12 +34,14 @@ void main() {
   });
 
   group('formatDuration', () {
+    final ko = lookupAppLocalizations(const Locale('ko'));
+
     test('1시간 미만은 분, 이상은 시간과 분 (초는 올림)', () {
-      expect(formatDuration(const Duration(seconds: 30)), '1분');
-      expect(formatDuration(const Duration(minutes: 45)), '45분');
-      expect(formatDuration(const Duration(minutes: 60)), '1시간');
-      expect(formatDuration(const Duration(minutes: 150)), '2시간 30분');
-      expect(formatDuration(const Duration(minutes: 5868)), '97시간 48분');
+      expect(formatDuration(ko, const Duration(seconds: 30)), '1분');
+      expect(formatDuration(ko, const Duration(minutes: 45)), '45분');
+      expect(formatDuration(ko, const Duration(minutes: 60)), '1시간');
+      expect(formatDuration(ko, const Duration(minutes: 150)), '2시간 30분');
+      expect(formatDuration(ko, const Duration(minutes: 5868)), '97시간 48분');
     });
   });
 
@@ -175,6 +178,9 @@ void main() {
     }) {
       return tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('ko'),
           home: Scaffold(
             body: SizedBox(
               height: 400,
@@ -286,6 +292,9 @@ void main() {
     }) {
       return tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('ko'),
           home: Scaffold(
             body: RouteStartButton(
               key: key,
@@ -346,6 +355,9 @@ void main() {
     Future<void> pumpChip(WidgetTester tester, {required bool estimated}) =>
         tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('ko'),
             home: RouteSummaryChip(
               remainingTime: const Duration(minutes: 5),
               remainingMeters: 287,

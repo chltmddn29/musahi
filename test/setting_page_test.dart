@@ -10,6 +10,7 @@ import 'package:musahi/features/setting/model/safety_contact_store.dart';
 import 'package:musahi/features/setting/presentation/setting_page.dart';
 import 'package:musahi/features/setting/widget/setting_menu_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:musahi/l10n/app_localizations.dart';
 
 const _navTitles = ['언어 설정', '관심지역 관리', '안전 연락처 관리', '텍스트 크기 조절'];
 const _switchTitles = ['재난문자 알림', '안전 안내 알림'];
@@ -43,6 +44,9 @@ Future<GoRouter> _pumpSettings(
 
   await tester.pumpWidget(
     MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('ko'),
       routerConfig: router,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(
