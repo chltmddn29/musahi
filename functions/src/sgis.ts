@@ -53,7 +53,7 @@ export function resetSgisAccessToken(): void {
     sgisAccessTokenExpiresAt = null;
 }
 
-async function sgisGet(path: string, params: object) {
+export async function sgisGet(path: string, params: object) {
     const accessToken = await ensureSgisAccessToken();
     const response = await axios.get(`${SGIS_API_URL}/${path}`, {
         params: {accessToken, ...params},
@@ -61,6 +61,8 @@ async function sgisGet(path: string, params: object) {
     });
     const body = response.data;
     if (body.errCd !== 0) {
+        // 시간 초과 등은 토큰과 무관하므로 인증 오류일 때만 토큰을 버린다.
+        if (isSgisAuthError(body.errCd)) resetSgisAccessToken();
         throw new SgisError(body.errCd, `SGIS ${path} 실패: ${body.errMsg}`);
     }
     return body.result;
@@ -68,17 +70,11 @@ async function sgisGet(path: string, params: object) {
 
 /** 위경도를 행정구역 주소("부산광역시 해운대구 중동")로 바꾼다. */
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
-    try {
-        const utmk = await sgisGet("transformation/transcoord.json", {
-            src: WGS84, dst: UTM_K, posX: lng, posY: lat,
-        });
-        const [place] = await sgisGet("addr/rgeocode.json", {
-            x_coor: utmk.posX, y_coor: utmk.posY, addr_type: 20,
-        });
-        return place.full_addr || [place.sido_nm, place.sgg_nm, place.emdong_nm].join(" ");
-    } catch (error) {
-        // 시간 초과 등은 토큰과 무관하므로 유효한 토큰을 버리지 않는다.
-        if (error instanceof SgisError && isSgisAuthError(error.errCd)) resetSgisAccessToken();
-        throw error;
-    }
+    const utmk = await sgisGet("transformation/transcoord.json", {
+        src: WGS84, dst: UTM_K, posX: lng, posY: lat,
+    });
+    const [place] = await sgisGet("addr/rgeocode.json", {
+        x_coor: utmk.posX, y_coor: utmk.posY, addr_type: 20,
+    });
+    return place.full_addr || [place.sido_nm, place.sgg_nm, place.emdong_nm].join(" ");
 }

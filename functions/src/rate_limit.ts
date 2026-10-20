@@ -39,3 +39,14 @@ export function createRateLimiter(windowMs: number, maxRequests: number, maxClie
         },
     };
 }
+
+/** 한도를 넘은 요청이면 429로 응답하고 true를 돌려준다. */
+export function rejectIfLimited(
+    limiter: {isLimited(clientId: string): boolean},
+    req: {ip?: string},
+    res: {status(code: number): {json(body: unknown): unknown}},
+): boolean {
+    if (!limiter.isLimited(req.ip ?? "unknown")) return false;
+    res.status(429).json({error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요."});
+    return true;
+}

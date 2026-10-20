@@ -1,6 +1,6 @@
 const {test} = require("node:test");
 const assert = require("node:assert/strict");
-const {createRateLimiter} = require("../lib/rate_limit");
+const {createRateLimiter, rejectIfLimited} = require("../lib/rate_limit");
 
 test("윈도우 안에서 최대 횟수를 넘으면 제한한다", () => {
     const limiter = createRateLimiter(1000, 2);
@@ -44,4 +44,16 @@ test("활성 클라이언트가 많아도 정리는 윈도우당 한 번만 한�
     // 같은 윈도우 안의 새 요청도 상한을 지킨다.
     for (let i = 20; i < 40; i++) limiter.isLimited(`ip-${i}`, 20);
     assert.equal(limiter.size, 3);
+});
+
+test("rejectIfLimited: 한도를 넘으면 429로 응답하고 true를 돌려준다", () => {
+    const limiter = createRateLimiter(60_000, 1);
+    const sent = [];
+    const res = {status: (code) => ({json: (body) => sent.push([code, body])})};
+
+    assert.equal(rejectIfLimited(limiter, {ip: "1.1.1.1"}, res), false);
+    assert.equal(rejectIfLimited(limiter, {ip: "1.1.1.1"}, res), true);
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0][0], 429);
+    assert.equal(rejectIfLimited(limiter, {ip: "2.2.2.2"}, res), false);
 });

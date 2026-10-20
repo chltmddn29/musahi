@@ -9,11 +9,9 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import {createShelterFunctions} from "./shelters";
 import {safeErrorSummary} from "./errors";
-import {createRateLimiter} from "./rate_limit";
-import {
-    SGIS_API_URL, ensureSgisAccessToken, isSgisAuthError, resetSgisAccessToken,
-    sgisConsumerKey, sgisConsumerSecret,
-} from "./sgis";
+import {createRateLimiter, rejectIfLimited} from "./rate_limit";
+import {getQueryDates, isStaleMessage, processNewMessages, sendToAllTopics} from "./disaster_poll";
+import {sgisConsumerKey, sgisConsumerSecret, sgisGet} from "./sgis";
 
 admin.initializeApp();
 const db = getFirestore(admin.app(), "musahi");
@@ -22,15 +20,6 @@ const messaging = getMessaging();
 setGlobalOptions({ maxInstances: 10 });
 
 const disasterApiKey = defineSecret("DISASTER_API_KEY");
-
-function getTodayYYYYMMDD(): string {
-    const now = new Date();
-    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const yyyy = kst.getUTCFullYear();
-    const mm = String(kst.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(kst.getUTCDate()).padStart(2, "0");
-    return `${yyyy}${mm}${dd}`;
-}
 
 function getSeverity(emrgStepNm: string): "위급" | "긴급" | "안전안내" {
     if (emrgStepNm.includes("위급")) return "위급";
@@ -44,6 +33,7 @@ function getSeverityBand(severity: string): "critical" | "safe" {
 
 async function fetchDisasterMessagesPage(
     apiKey: string,
+    crtDt: string,
     page: number,
     numOfRows: number,
     retries = 2
@@ -57,7 +47,7 @@ async function fetchDisasterMessagesPage(
                     params: {
                         serviceKey: apiKey,
                         returnType: "json",
-                        crtDt: getTodayYYYYMMDD(),
+                        crtDt,
                         numOfRows,
                         pageNo: page,
                     },
@@ -68,33 +58,41 @@ async function fetchDisasterMessagesPage(
         } catch (error) {
             lastError = error;
             if (attempt === retries) throw error;
-            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { ...safeErrorSummary(error), page });
+            logger.warn(`API 호출 실패, 재시도 (${attempt + 1}/${retries})`, { ...safeErrorSummary(error), crtDt, page });
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
     }
     throw lastError;
 }
 
-async function fetchAllTodayMessages(apiKey: string): Promise<any[]> {
+async function fetchMessagesOf(apiKey: string, crtDt: string): Promise<any[]> {
     const numOfRows = 100;
     let page = 1;
     let allMessages: any[] = [];
     let totalCount = 0;
 
     while (true) {
-        const response = await fetchDisasterMessagesPage(apiKey, page, numOfRows);
+        const response = await fetchDisasterMessagesPage(apiKey, crtDt, page, numOfRows);
         const body = response.data?.body ?? [];
         totalCount = response.data?.totalCount ?? 0;
 
         allMessages = allMessages.concat(body);
 
-        logger.info(`페이지 ${page} 조회 완료 (누적 ${allMessages.length}/${totalCount})`);
+        logger.info(`${crtDt} 페이지 ${page} 조회 완료 (누적 ${allMessages.length}/${totalCount})`);
 
         if (body.length === 0 || allMessages.length >= totalCount) break;
         page++;
     }
 
     return allMessages;
+}
+
+async function fetchAllMessages(apiKey: string): Promise<any[]> {
+    const messages: any[] = [];
+    for (const crtDt of getQueryDates()) {
+        messages.push(...await fetchMessagesOf(apiKey, crtDt));
+    }
+    return messages;
 }
 
 async function publishMessage(msg: any) {
@@ -112,26 +110,21 @@ async function publishMessage(msg: any) {
 
     const topics = ["all", ...regionIds.map((id) => `${id}_${band}`)];
 
-    const publishPromises = topics.map((topicSuffix) => {
-        const topic = `region_${topicSuffix}`;
-        return messaging.send({
-            topic,
-            notification: {
-                title: `[${severity}] ${msg.RCPTN_RGN_NM?.trim() ?? ""}`,
-                body: msg.MSG_CN ?? "",
-            },
-            data: {
-                sn: String(msg.SN),
-                severity,
-                emrgStepNm: msg.EMRG_STEP_NM ?? "",
-                dstSeNm: msg.DST_SE_NM ?? "",
-                rcptnRgnNm: msg.RCPTN_RGN_NM ?? "",
-                crtDt: msg.CRT_DT ?? "",
-            },
-        });
-    });
-
-    await Promise.allSettled(publishPromises);
+    await sendToAllTopics(topics, (suffix) => messaging.send({
+        topic: `region_${suffix}`,
+        notification: {
+            title: `[${severity}] ${msg.RCPTN_RGN_NM?.trim() ?? ""}`,
+            body: msg.MSG_CN ?? "",
+        },
+        data: {
+            sn: String(msg.SN),
+            severity,
+            emrgStepNm: msg.EMRG_STEP_NM ?? "",
+            dstSeNm: msg.DST_SE_NM ?? "",
+            rcptnRgnNm: msg.RCPTN_RGN_NM ?? "",
+            crtDt: msg.CRT_DT ?? "",
+        },
+    }));
     logger.info(`FCM 발행 완료 (SN: ${msg.SN}, 심각도: ${severity}, 밴드: ${band}, 지역: ${regionIds.join(",")})`);
 }
 
@@ -183,7 +176,7 @@ export const pollDisasterAlerts = onSchedule(
     },
     async (event) => {
         try {
-            const body = await fetchAllTodayMessages(disasterApiKey.value());
+            const body = await fetchAllMessages(disasterApiKey.value());
 
             if (body.length === 0) {
                 logger.info("오늘자 재난문자 없음");
@@ -193,23 +186,29 @@ export const pollDisasterAlerts = onSchedule(
             const lastProcessedDoc = await db.collection("system").doc("lastProcessed").get();
             const lastSn: number = lastProcessedDoc.exists ? lastProcessedDoc.data()?.sn ?? 0 : 0;
 
-            const newMessages = body.filter((msg: any) => msg.SN > lastSn);
+            const processedSn = await processNewMessages(
+                body,
+                lastSn,
+                async (msg) => {
+                    // 멱등한 저장을 먼저 하고 푸시를 마지막에 보낸다. 앞 단계가 실패해 재시도해도 푸시가 중복되지 않는다.
+                    await saveMessage(msg);
+                    await collectRegionCodes(msg);
+                    await publishMessage(msg);
+                },
+                (msg, error) => logger.error(
+                    isStaleMessage(msg.CRT_DT) ? "재난문자 처리 실패, 1시간이 지나 건너뜀" : "재난문자 처리 실패, 다음 폴링에서 다시 시도",
+                    {sn: msg.SN, ...safeErrorSummary(error)},
+                ),
+                (msg) => isStaleMessage(msg.CRT_DT),
+            );
 
-            if (newMessages.length === 0) {
-                logger.info("새 재난문자 없음", { lastSn });
+            if (processedSn === lastSn) {
+                logger.info("새로 처리한 재난문자 없음", { lastSn });
                 return;
             }
-
-            logger.info(`새 재난문자 ${newMessages.length}건 발견, FCM 발행 시작`);
-
-            for (const msg of newMessages) {
-                await publishMessage(msg);
-                await collectRegionCodes(msg);
-                await saveMessage(msg);
-            }
-
-            const maxSn = Math.max(...body.map((msg: any) => msg.SN));
-            await db.collection("system").doc("lastProcessed").set({ sn: maxSn });
+            logger.info(`재난문자 처리 완료 (SN ${lastSn} → ${processedSn})`);
+            // 실패해 멈췄더라도 그 앞까지 처리한 SN은 저장해 중복 발송을 막는다.
+            await db.collection("system").doc("lastProcessed").set({ sn: processedSn });
 
         } catch (error) {
             logger.error("재난문자 API 호출 실패", safeErrorSummary(error));
@@ -233,32 +232,12 @@ export const sgisRegions = onRequest(
             return;
         }
 
-        if (sgisRateLimiter.isLimited(req.ip ?? "unknown")) {
-            res.status(429).json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." });
-            return;
-        }
+        if (rejectIfLimited(sgisRateLimiter, req, res)) return;
 
         try {
             const cd = typeof req.query.cd === "string" ? req.query.cd : undefined;
-            const accessToken = await ensureSgisAccessToken();
-
-            const response = await axios.get(
-                `${SGIS_API_URL}/addr/stage.json`,
-                {
-                    params: { accessToken, ...(cd ? { cd } : {}) },
-                    timeout: 15000,
-                }
-            );
-            const body = response.data;
-
-            if (body.errCd !== 0) {
-                if (isSgisAuthError(body.errCd)) resetSgisAccessToken();
-                logger.warn("SGIS 지역 조회 실패", { errCd: body.errCd, errMsg: body.errMsg });
-                res.status(502).json({ error: body.errMsg ?? "지역 조회 실패" });
-                return;
-            }
-
-            res.status(200).json({ result: body.result });
+            const result = await sgisGet("addr/stage.json", cd ? { cd } : {});
+            res.status(200).json({ result });
         } catch (error) {
             logger.error("SGIS 지역 조회 중 오류", safeErrorSummary(error));
             res.status(502).json({ error: "지역 조회 실패" });
