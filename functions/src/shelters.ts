@@ -6,9 +6,10 @@ import axios from "axios";
 import {Firestore} from "firebase-admin/firestore";
 import {safeErrorSummary} from "./errors";
 import {toNumber} from "./query";
+import {createRateLimiter, rejectIfLimited} from "./rate_limit";
 import {parseRegions} from "./region_match";
 import {
-    ShelterRow, areaOf, searchShelters, staleChunkIds, toEncodedKey, toShelterRow,
+    ShelterRow, areaOf, isLastShelterPage, parseTotalCount, searchShelters, staleChunkIds, toEncodedKey, toShelterRow,
 } from "./shelter_logic";
 import {reverseGeocode, sgisConsumerKey, sgisConsumerSecret} from "./sgis";
 
@@ -26,8 +27,12 @@ const INDEX_DOC = "system/shelterIndex";
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
+const rateLimiter = createRateLimiter(60 * 1000, 30);
 
-async function fetchShelterPage(encodedKey: string, pageNo: number): Promise<any[]> {
+async function fetchShelterPage(
+    encodedKey: string,
+    pageNo: number,
+): Promise<{items: any[]; totalCount?: number}> {
     const response = await getWithRetry(`${SHELTER_API_URL}?serviceKey=${encodedKey}`, {
         params: {returnType: "json", pageNo, numOfRows: PAGE_SIZE},
         timeout: 60000,
@@ -39,9 +44,9 @@ async function fetchShelterPage(encodedKey: string, pageNo: number): Promise<any
         throw new Error(`민방위 대피시설 API 오류 (page ${pageNo}): ${JSON.stringify(response.data).slice(0, 300)}`);
     }
     const item = body.items?.item;
-    if (item === undefined) return [];
     // 결과가 1건이면 배열이 아닌 객체로 온다.
-    return Array.isArray(item) ? item : [item];
+    const items = item === undefined ? [] : Array.isArray(item) ? item : [item];
+    return {items, totalCount: parseTotalCount(body.totalCount)};
 }
 
 async function getWithRetry(url: string, config: object, retries = 2) {
@@ -58,15 +63,23 @@ async function getWithRetry(url: string, config: object, retries = 2) {
 
 async function fetchAllShelters(encodedKey: string): Promise<ShelterRow[]> {
     const rowsById = new Map<string, ShelterRow>();
+    let fetched = 0;
     for (let pageNo = 1; ; pageNo++) {
-        const items = await fetchShelterPage(encodedKey, pageNo);
+        const {items, totalCount} = await fetchShelterPage(encodedKey, pageNo);
+        fetched += items.length;
         for (const row of items.map(toShelterRow)) {
             if (row) rowsById.set(row[0], row);
         }
         if (pageNo === 1 && items.length > 0 && rowsById.size === 0) {
             logger.warn("민방위 대피시설 응답 항목을 좌표로 변환하지 못함", {sample: items[0]});
         }
-        if (items.length < PAGE_SIZE) return [...rowsById.values()];
+        if (isLastShelterPage(items.length, fetched, PAGE_SIZE, totalCount)) {
+            // 중간 페이지가 비거나 짧게 와서 일부만 받았다면 기존 목록을 덮어쓰지 않도록 실패시킨다.
+            if (totalCount !== undefined && fetched < totalCount) {
+                throw new Error(`민방위 대피시설을 일부만 받음 (${fetched}/${totalCount})`);
+            }
+            return [...rowsById.values()];
+        }
     }
 }
 
@@ -161,6 +174,8 @@ export function createShelterFunctions(db: Firestore) {
     const nearbyShelters = onRequest(
         {region: "asia-northeast3", memory: "512MiB", secrets: [sgisConsumerKey, sgisConsumerSecret]},
         async (req, res) => {
+            if (rejectIfLimited(rateLimiter, req, res)) return;
+
             const lat = toNumber(req.query.lat);
             const lng = toNumber(req.query.lng);
             const requested = Number(req.query.limit);
@@ -190,6 +205,8 @@ export function createShelterFunctions(db: Firestore) {
     const disasterAreas = onRequest(
         {region: "asia-northeast3", memory: "512MiB"},
         async (req, res) => {
+            if (rejectIfLimited(rateLimiter, req, res)) return;
+
             try {
                 const rows = await loadShelterRows(db);
                 const areas = parseRegions(req.query.regions)

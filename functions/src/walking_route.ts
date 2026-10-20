@@ -4,8 +4,10 @@ import {defineSecret} from "firebase-functions/params";
 import axios from "axios";
 import {safeErrorSummary} from "./errors";
 import {toNumber} from "./query";
+import {createRateLimiter, rejectIfLimited} from "./rate_limit";
 
 const tmapAppKey = defineSecret("TMAP_APP_KEY");
+const rateLimiter = createRateLimiter(60 * 1000, 30);
 
 const TMAP_PEDESTRIAN_URL = "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1";
 
@@ -45,6 +47,8 @@ export function simplifyRoute(features: any[]) {
 export const walkingRoute = onRequest(
     {region: "asia-northeast3", secrets: [tmapAppKey]},
     async (req, res) => {
+        if (rejectIfLimited(rateLimiter, req, res)) return;
+
         const [startLat, startLng, endLat, endLng] =
             ["startLat", "startLng", "endLat", "endLng"].map((key) => toNumber(req.query[key]));
         if (![startLat, startLng, endLat, endLng].every(Number.isFinite)) {

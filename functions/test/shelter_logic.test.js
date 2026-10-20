@@ -2,6 +2,7 @@ const {test} = require("node:test");
 const assert = require("node:assert/strict");
 const {
     toEncodedKey, toShelterRow, distanceMeters, searchShelters, areaOf, staleChunkIds,
+    nearestTo, isLastShelterPage,
 } = require("../lib/shelter_logic");
 const {parseRegions} = require("../lib/region_match");
 
@@ -135,4 +136,36 @@ test("searchShelters: 재난 지역이 여럿이면 사용자와 가까운 지�
 test("areaOf: 대피소가 한 곳뿐인 지역도 최소 반경을 갖는다", () => {
     const [region] = parseRegions("서울특별시 중구");
     assert.equal(areaOf(region, [SEOUL_1]).radiusMeters, 500);
+});
+
+test("nearestTo: 가까운 순으로 limit개만 돌려준다", () => {
+    assert.deepEqual(nearestTo(ROWS, USER_IN_HAEUNDAE, 2).map(([id]) => id), ["h1", "h2"]);
+    assert.equal(nearestTo(ROWS, USER_IN_HAEUNDAE).length, ROWS.length);
+    assert.deepEqual(ROWS.map(([id]) => id), ["h1", "h2", "s1", "s2"], "원본 순서는 바뀌지 않는다");
+});
+
+test("isLastShelterPage: totalCount를 알면 그만큼 받았을 때 끝난다", () => {
+    assert.equal(isLastShelterPage(100, 100, 100, 250), false);
+    assert.equal(isLastShelterPage(50, 250, 100, 250), true);
+    // 중간 페이지가 짧게 와도 끝으로 보지 않는다.
+    assert.equal(isLastShelterPage(60, 160, 100, 250), false);
+});
+
+test("isLastShelterPage: totalCount를 모르면 페이지가 덜 찼을 때 끝난다", () => {
+    assert.equal(isLastShelterPage(100, 100, 100), false);
+    assert.equal(isLastShelterPage(99, 199, 100), true);
+});
+
+test("isLastShelterPage: 빈 페이지는 항상 끝이다", () => {
+    assert.equal(isLastShelterPage(0, 100, 100, 250), true);
+    assert.equal(isLastShelterPage(0, 0, 100), true);
+});
+
+test("parseTotalCount: null·빈 문자열은 0이 아니라 알 수 없는 값으로 본다", () => {
+    const {parseTotalCount} = require("../lib/shelter_logic");
+    assert.equal(parseTotalCount(null), undefined);
+    assert.equal(parseTotalCount(""), undefined);
+    assert.equal(parseTotalCount("abc"), undefined);
+    assert.equal(parseTotalCount("23000"), 23000);
+    assert.equal(parseTotalCount(0), 0);
 });

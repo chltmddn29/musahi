@@ -43,9 +43,34 @@ export interface Point {
     lng: number;
 }
 
-export function nearestTo(rows: ShelterRow[], point: Point): ShelterRow[] {
-    const distanceOf = ([, , , lat, lng]: ShelterRow) => distanceMeters(point.lat, point.lng, lat, lng);
-    return [...rows].sort((a, b) => distanceOf(a) - distanceOf(b));
+/** [point]에 가까운 순으로 최대 [limit]개. 거리는 행마다 한 번만 계산한다. */
+export function nearestTo(rows: ShelterRow[], point: Point, limit = rows.length): ShelterRow[] {
+    return rows
+        .map((row) => ({row, distance: distanceMeters(point.lat, point.lng, row[3], row[4])}))
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, limit)
+        .map(({row}) => row);
+}
+
+/**
+ * 받은 페이지가 마지막인지. [totalCount]를 알면 그 수만큼 받았을 때, 모르면 페이지가 덜 찼을 때 끝이다.
+ * 빈 페이지는 항상 끝이다.
+ */
+/** totalCount가 null·빈 문자열이면 Number()가 0이 되므로 알 수 없는 값(undefined)으로 돌려준다. */
+export function parseTotalCount(raw: unknown): number | undefined {
+    if (raw === null || raw === undefined || String(raw).trim() === "") return undefined;
+    const count = Number(raw);
+    return Number.isFinite(count) ? count : undefined;
+}
+
+export function isLastShelterPage(
+    pageItemCount: number,
+    fetchedCount: number,
+    pageSize: number,
+    totalCount?: number,
+): boolean {
+    if (pageItemCount === 0) return true;
+    return totalCount === undefined ? pageItemCount < pageSize : fetchedCount >= totalCount;
 }
 
 export function centroidOf(rows: ShelterRow[]): Point {
@@ -73,24 +98,25 @@ export function searchShelters(
         distanceMeters: Math.round(distanceMeters(user.lat, user.lng, lat, lng)),
     });
 
-    const nearby = nearestTo(rows, user);
-    const addressForRegion = userAddress ?? nearby[0]?.[2];
-    const isUserInRegion = addressForRegion !== undefined && isInRegions(addressForRegion, regions);
     const regionRows = rows.filter(([, , address]) => isInRegions(address, regions));
+    // 사용자 주소를 모르면 가장 가까운 대피소의 주소로 대신 판단한다.
+    const addressForRegion = regions.length === 0 ? undefined :
+        userAddress ?? nearestTo(rows, user, 1)[0]?.[2];
+    const isUserInRegion = addressForRegion !== undefined && isInRegions(addressForRegion, regions);
 
     if (regions.length === 0 || isUserInRegion || regionRows.length === 0) {
-        return {mode: "nearby", shelters: nearby.slice(0, limit).map(toResponse)};
+        return {mode: "nearby", shelters: nearestTo(rows, user, limit).map(toResponse)};
     }
 
     // 지역이 여럿이면 합친 중심이 지역 밖에 잡히므로, 사용자와 가까운 지역 하나를 고른다.
     // 그 지역 중심 주변 대피소를 고른 뒤, 표시되는 거리(사용자 기준) 순으로 정렬한다.
     const distanceToUser = (point: Point) => distanceMeters(user.lat, user.lng, point.lat, point.lng);
     const [nearestRegionRows] = regions
-        .map((region) => rows.filter(([, , address]) => isInRegions(address, [region])))
+        .map((region) => regionRows.filter(([, , address]) => isInRegions(address, [region])))
         .filter((group) => group.length > 0)
         .sort((a, b) => distanceToUser(centroidOf(a)) - distanceToUser(centroidOf(b)));
     const center = centroidOf(nearestRegionRows);
-    const aroundCenter = nearestTo(nearestRegionRows, center).slice(0, limit);
+    const aroundCenter = nearestTo(nearestRegionRows, center, limit);
     return {
         mode: "region",
         center,
